@@ -1,0 +1,148 @@
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: var(--header-height);
+  transition: background 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out);
+}
+
+.header--scrolled {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-sm);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.header--scrolled .header-login {
+  color: var(--color-ink-muted);
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.header-nav {
+  display: none;
+}
+
+.header-actions {
+  display: none;
+  align-items: center;
+  gap: 8px;
+}
+
+.header--scrolled .header-actions .btn-ghost {
+  color: var(--color-ink-muted);
+}
+
+.header-menu-btn {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 44px;
+  height: 44px;
+  padding: 10px;
+}
+
+.header-menu-btn span {
+  display: block;
+  height: 2px;
+  background: white;
+  border-radius: 2px;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.header--scrolled .header-menu-btn span {
+  background: var(--color-ink);
+}
+
+@media (min-width: 900px) {
+  .header-nav {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+  }
+
+  .header-nav ul {
+    display: flex;
+    gap: 32px;
+  }
+
+  .header-nav a {
+    font-size: 15px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.85);
+    transition: color 0.2s;
+  }
+
+  .header--scrolled .header-nav a {
+    color: var(--color-ink-muted);
+  }
+
+  .header-nav a:hover {
+    color: white;
+  }
+
+  .header--scrolled .header-nav a:hover {
+    color: var(--color-ink);
+  }
+
+  .header-nav-actions {
+    display: none;
+  }
+
+  .header-actions {
+    display: flex;
+  }
+
+  .header-actions .btn-ghost {
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .header-menu-btn {
+    display: none;
+  }
+}
+
+@media (max-width: 899px) {
+  .header-nav--open {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    inset: 0;
+    top: var(--header-height);
+    padding: 32px 24px;
+    background: var(--color-surface);
+    gap: 32px;
+  }
+
+  .header-nav--open ul {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .header-nav--open a {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-ink);
+  }
+
+  .header-nav-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: auto;
+  }
+
+  .header-nav-actions .btn {
+    width: 100%;
+  }
+}

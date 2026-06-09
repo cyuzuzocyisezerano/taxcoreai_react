@@ -1,0 +1,140 @@
+.how-it-works {
+  background: linear-gradient(180deg, var(--color-bg) 0%, #f1f5f9 100%);
+}
+
+.how-layout {
+  display: grid;
+  gap: 64px;
+  align-items: center;
+}
+
+@media (min-width: 960px) {
+  .how-layout {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.how-copy .section-label {
+  margin-bottom: 16px;
+}
+
+.how-steps {
+  margin-top: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.how-steps li {
+  display: flex;
+  gap: 20px;
+}
+
+.how-step-num {
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--color-primary);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary-light);
+  border-radius: var(--radius-md);
+}
+
+.how-steps h3 {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.how-steps p {
+  font-size: 15px;
+  color: var(--color-ink-muted);
+  line-height: 1.6;
+}
+
+.how-visual {
+  display: flex;
+  justify-content: center;
+}
+
+.how-phone {
+  width: min(100%, 320px);
+  padding: 12px;
+  background: var(--color-ink);
+  border-radius: 36px;
+  box-shadow: var(--shadow-lg);
+}
+
+.how-phone-screen {
+  background: var(--color-surface);
+  border-radius: 28px;
+  padding: 24px 20px;
+}
+
+.how-progress {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.how-progress span {
+  font-size: 13px;
+  color: var(--color-ink-muted);
+}
+
+.how-progress strong {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--color-primary-dark);
+}
+
+.how-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.how-check-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-ink-muted);
+}
+
+.how-check-item.done {
+  color: var(--color-ink);
+}
+
+.how-check-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 12px;
+  background: #f1f5f9;
+  color: var(--color-ink-subtle);
+}
+
+.how-check-item.done .how-check-icon {
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+}
+
+.how-file-btn {
+  width: 100%;
+}

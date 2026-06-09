@@ -1,0 +1,139 @@
+.pricing {
+  background: var(--color-surface);
+}
+
+.section-header--center {
+  text-align: center;
+  margin-inline: auto;
+}
+
+.section-subtitle--center {
+  margin-inline: auto;
+}
+
+.pricing-grid {
+  display: grid;
+  gap: 24px;
+  align-items: stretch;
+}
+
+@media (min-width: 900px) {
+  .pricing-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.pricing-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 32px;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.pricing-card--highlighted {
+  background: var(--color-ink);
+  color: white;
+  border-color: var(--color-ink);
+  box-shadow: var(--shadow-lg);
+  transform: scale(1.02);
+}
+
+.pricing-badge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  white-space: nowrap;
+}
+
+.pricing-card h3 {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.pricing-desc {
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--color-ink-muted);
+  line-height: 1.5;
+  min-height: 42px;
+}
+
+.pricing-card--highlighted .pricing-desc {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.pricing-amount {
+  margin: 24px 0;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.pricing-price {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.pricing-period {
+  font-size: 15px;
+  color: var(--color-ink-muted);
+}
+
+.pricing-card--highlighted .pricing-period {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.pricing-features {
+  flex: 1;
+  margin-bottom: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pricing-features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.pricing-features svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--color-primary);
+}
+
+.pricing-card--highlighted .pricing-features svg {
+  color: #5eead4;
+}
+
+.pricing-cta {
+  width: 100%;
+}
+
+.pricing-card--highlighted .btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: white;
+}
+
+@media (max-width: 899px) {
+  .pricing-card--highlighted {
+    transform: none;
+  }
+}

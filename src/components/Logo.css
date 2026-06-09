@@ -1,0 +1,35 @@
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.25rem;
+  letter-spacing: -0.03em;
+}
+
+.logo--light .logo-text {
+  color: white;
+}
+
+.logo--dark .logo-text {
+  color: var(--color-ink);
+}
+
+.logo-ai {
+  margin-left: 2px;
+  background: linear-gradient(135deg, #2dd4bf, #6366f1);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.logo--light .logo-ai {
+  background: linear-gradient(135deg, #5eead4, #a5b4fc);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.logo-mark {
+  flex-shrink: 0;
+}
