@@ -14,6 +14,7 @@ export function Taxpayers() {
   const [typeFilter, setTypeFilter] = useState('all')
 
   useEffect(() => {
+    console.log('Loading taxpayers with filters:', { search, statusFilter, typeFilter })
     api
       .getTaxpayers({
         q: search || undefined,
@@ -21,10 +22,13 @@ export function Taxpayers() {
         type: typeFilter !== 'all' ? typeFilter : undefined,
       })
       .then((data) => {
+        console.log('Taxpayers loaded:', data)
         setTaxpayers(data.taxpayers)
         setTotal(data.total)
       })
-      .catch(console.error)
+      .catch((err) => {
+        console.error('Failed to load taxpayers:', err)
+      })
   }, [search, statusFilter, typeFilter])
 
   const role = user?.role ?? 'Admin'

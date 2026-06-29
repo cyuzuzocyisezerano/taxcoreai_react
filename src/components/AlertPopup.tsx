@@ -71,11 +71,10 @@ export function AlertPopup({ onNavigate }: AlertPopupProps) {
         showNextAlert()
       }
     } catch (err) {
-      // Silently handle auth errors - user may not be logged in
-      if (err instanceof Error && err.message.includes('Authentication required')) {
-        return
-      }
-      console.error('Failed to load alerts:', err)
+      // Silently handle all errors - notifications are optional
+      // Don't show alerts if endpoint doesn't exist or user not logged in
+      console.log('Notifications not available:', err)
+      setAlerts([])
     }
   }
 

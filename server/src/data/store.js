@@ -21,6 +21,7 @@ const DEFAULT_STATE = {
   settings: {},
   aiPrompts: [],
   auditLogs: [],
+  users: [],
 }
 
 export async function loadDb() {
