@@ -60,14 +60,20 @@
 .login-brand {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 18px;
   margin-bottom: 48px;
 }
 
 .login-rra-logo {
+  width: 64px;
+  height: 64px;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  border-radius: 50%;
+  object-fit: contain;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 18px;
+  box-shadow: 0 16px 28px rgba(0, 0, 0, 0.2);
 }
 
 .login-brand-text {

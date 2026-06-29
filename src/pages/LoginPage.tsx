@@ -1,5 +1,4 @@
-import { useState, type FormEvent } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { useState, type FormEvent, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { ApiError } from '../lib/api'
 import './LoginPage.css'
@@ -29,11 +28,26 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const { user, loading, login } = useAuth()
-  const navigate = useNavigate()
+  const hasNavigated = useRef(false)
 
-  if (!loading && user) {
-    return <Navigate to="/admin" replace />
-  }
+  // Redirect based on role - only run once when user is loaded
+  useEffect(() => {
+    // Only redirect if we have a user, not loading, and haven't navigated yet
+    if (!loading && user && !hasNavigated.current) {
+      hasNavigated.current = true
+      
+      const dashboardMap: Record<string, string> = {
+        Admin: '/dashboard/admin',
+        Officer: '/dashboard/officer',
+        Auditor: '/dashboard/auditor',
+        Supervisor: '/dashboard/supervisor',
+      }
+      const dashboard = dashboardMap[user.role] || '/dashboard/admin'
+      
+      // Use window.location for a full page navigation to avoid React Router loops
+      window.location.href = dashboard
+    }
+  }, [user, loading]) // Only depend on user and loading, not location
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -46,7 +60,7 @@ export function LoginPage() {
     setSubmitting(true)
     try {
       await login(username, password, remember)
-      navigate('/admin')
+      // After login, redirect will happen automatically via the component re-render
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Unable to sign in. Please try again.')
     } finally {
@@ -65,7 +79,13 @@ export function LoginPage() {
 
         <div className="login-info-content">
           <div className="login-brand">
-            <RraLogo />
+            <img
+              className="login-rra-logo"
+              src="/RRA%20LOGO.png"
+              alt="Rwanda Revenue Authority logo"
+              loading="eager"
+              fetchPriority="high"
+            />
             <div className="login-brand-text">
               <strong>TaxCoreAI</strong>
               <span>Rwanda Revenue Authority</span>
@@ -187,24 +207,6 @@ export function LoginPage() {
         </p>
       </section>
     </div>
-  )
-}
-
-function RraLogo() {
-  return (
-    <svg className="login-rra-logo" width="48" height="48" viewBox="0 0 48 48" aria-hidden>
-      <circle cx="24" cy="24" r="24" fill="white" />
-      <circle cx="24" cy="24" r="22" fill="#f0f4f8" />
-      <ellipse cx="24" cy="34" rx="14" ry="4" fill="#8B4513" opacity="0.35" />
-      <path
-        d="M24 10c-2 8-8 12-8 18 0 4 3.5 8 8 8s8-4 8-8c0-6-6-10-8-18z"
-        fill="#22c55e"
-      />
-      <path d="M24 14c1 6 5 9 5 14 0 3-2 6-5 6" fill="#16a34a" />
-      <circle cx="20" cy="22" r="5" fill="#fbbf24" opacity="0.9" />
-      <circle cx="28" cy="20" r="4" fill="#38bdf8" opacity="0.85" />
-      <circle cx="24" cy="16" r="3.5" fill="#f97316" opacity="0.9" />
-    </svg>
   )
 }
 

@@ -1,0 +1,92 @@
+[
+  {
+    "id": "rra_001",
+    "title": "VAT Registration Requirements",
+    "text": "Businesses with annual turnover exceeding 20 million RWF must register for VAT. Registration requires TIN, business registration certificate, and bank account details. VAT returns are filed monthly.",
+    "category": "vat"
+  },
+  {
+    "id": "rra_002",
+    "title": "PAYE Filing Deadlines",
+    "text": "Employers must file PAYE declarations and remit taxes by the 15th of the following month. Late filing attracts a penalty of 10% of tax due plus interest of 1.5% per month.",
+    "category": "paye"
+  },
+  {
+    "id": "rra_003",
+    "title": "Corporate Income Tax Rate",
+    "text": "The standard CIT rate in Rwanda is 30% of taxable income. SMEs with turnover below 50 million RWF may qualify for preferential rates. CIT returns are filed annually within 3 months after year-end.",
+    "category": "cit"
+  },
+  {
+    "id": "rra_004",
+    "title": "TIN Registration Process",
+    "text": "All taxpayers must obtain a Tax Identification Number (TIN) from RRA. Required documents include national ID or passport, proof of address, and business registration for companies. Registration is free and done online via the iTax portal.",
+    "category": "registration"
+  },
+  {
+    "id": "rra_005",
+    "title": "Withholding Tax Obligations",
+    "text": "WHT applies to payments for services at 15% for residents and non-residents. Rent payments attract 15% WHT. Dividends paid to non-residents attract 15% WHT. Withholders must file monthly declarations.",
+    "category": "withholding"
+  },
+  {
+    "id": "rra_006",
+    "title": "Tax Clearance Certificate",
+    "text": "Tax clearance certificates are issued to taxpayers with no outstanding obligations. Required for government contracts, business renewals, and visa applications. Valid for 3 months from date of issue.",
+    "category": "clearance"
+  },
+  {
+    "id": "rra_007",
+    "title": "Penalty and Interest Regime",
+    "text": "Late payment attracts 10% penalty on outstanding tax plus 1.5% monthly interest. Failure to file returns carries a penalty of 100,000 RWF per month. Voluntary disclosure reduces penalties by 50%.",
+    "category": "penalties"
+  },
+  {
+    "id": "rra_008",
+    "title": "Objection and Appeal Process",
+    "text": "Taxpayers may object to assessments within 30 days of receipt. Objections must be filed in writing with supporting evidence. The Commissioner General has 90 days to respond. Appeals go to the Tax Appeals Commission.",
+    "category": "appeals"
+  },
+  {
+    "id": "rra_009",
+    "title": "VAT Input Credits",
+    "text": "VAT-registered businesses may claim input tax credits on purchases used for taxable supplies. Input credits cannot exceed output tax. Excess credits may be carried forward or refunded after 3 months.",
+    "category": "vat"
+  },
+  {
+    "id": "rra_010",
+    "title": "Transfer Pricing Rules",
+    "text": "Rwanda follows OECD transfer pricing guidelines. Related-party transactions must be at arm's length. Documentation requirements apply for transactions exceeding 200 million RWF. Annual country-by-country reporting required for multinationals.",
+    "category": "transfer_pricing"
+  },
+  {
+    "id": "rra_011",
+    "title": "Small Business Presumptive Tax",
+    "text": "Businesses with turnover below 20 million RWF pay presumptive tax. Rates range from 0% to 3% of turnover depending on sector. Returns filed quarterly. No accounting records required.",
+    "category": "sme"
+  },
+  {
+    "id": "rra_012",
+    "title": "Personal Income Tax Rates",
+    "text": "Individual income tax in Rwanda is progressive: 0% up to 360,000 RWF, 20% from 360,001 to 1,200,000 RWF, and 30% above 1,200,000 RWF annually. Employment income is taxed through PAYE.",
+    "category": "personal_tax"
+  },
+  {
+    "id": "rra_013",
+    "title": "Customs and Excise Duties",
+    "text": "Import duties apply to goods entering Rwanda based on the EAC Common External Tariff. Excise duties apply to alcoholic beverages, tobacco, fuel, and vehicles. Customs declarations must be filed through ASYCUDA system.",
+    "category": "customs"
+  },
+  {
+    "id": "rra_014",
+    "title": "Electronic Filing Requirements",
+    "text": "All taxpayers with annual turnover above 20 million RWF must file returns electronically via the iTax portal. Electronic filing is mandatory for VAT, PAYE, CIT, and WHT. Paper filing allowed only for micro taxpayers.",
+    "category": "efiling"
+  },
+  {
+    "id": "rra_015",
+    "title": "Audit Selection Criteria",
+    "text": "RRA uses risk-based audit selection. High-risk indicators include large VAT refund claims, significant income fluctuations, related-party transactions, and cash-intensive businesses. Audit periods are typically 3-5 years.",
+    "category": "audit"
+  }
+]

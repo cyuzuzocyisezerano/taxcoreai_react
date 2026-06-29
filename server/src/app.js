@@ -15,13 +15,18 @@ import searchRoutes from './routes/search.routes.js'
 import notificationsRoutes from './routes/notifications.routes.js'
 import workflowsRoutes from './routes/workflows.routes.js'
 import reportsRoutes from './routes/reports.routes.js'
+import integrationsRoutes from './routes/integrations.routes.js'
 import settingsRoutes from './routes/settings.routes.js'
 import aiRoutes from './routes/ai.routes.js'
+import jobsRoutes from './routes/jobs.routes.js'
+import notificationsStreamRoutes from './routes/notifications.stream.js'
+import { notificationBus } from './services/notificationBus.js'
 
 
 
 
 export function createApp() {
+
   const app = express()
   app.use(
     cors({
@@ -62,11 +67,18 @@ export function createApp() {
   app.use('/api/audit-logs', auditRoutes)
   app.use('/api/users', usersRoutes)
   app.use('/api/search', searchRoutes)
+  // Attach in-memory event bus for push notifications
+  app.locals.eventBus = notificationBus
+
   app.use('/api/notifications', notificationsRoutes)
+  app.use('/api/notifications', notificationsStreamRoutes)
+
   app.use('/api/workflows', workflowsRoutes)
   app.use('/api/reports', reportsRoutes)
+  app.use('/api/integrations', integrationsRoutes)
   app.use('/api/settings', settingsRoutes)
   app.use('/api/ai-assistant', aiRoutes)
+  app.use('/api/jobs', jobsRoutes)
 
   app.use((_req, res) => {
     res.status(404).json({ error: 'Not found' })

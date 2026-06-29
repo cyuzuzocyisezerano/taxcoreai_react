@@ -15,10 +15,34 @@ interface AuditEntry {
 export function AuditLogs() {
   const { user } = useAuth()
   const [logs, setLogs] = useState<AuditEntry[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [actionFilter, setActionFilter] = useState('')
+  const [userIdFilter, setUserIdFilter] = useState('')
 
   useEffect(() => {
-    api.getAuditLogs().then((data) => setLogs(data.logs)).catch(console.error)
+    loadLogs()
   }, [])
+
+  async function loadLogs() {
+    try {
+      setLoading(true)
+      setError(null)
+      const params: any = { limit: 100 }
+      if (actionFilter) params.action = actionFilter
+      if (userIdFilter) params.userId = userIdFilter
+      const data = await api.getAuditLogs(100)
+      setLogs(data.logs)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load audit logs')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function handleExport() {
+    window.open('/api/audit-logs/export/csv', '_blank')
+  }
 
   return (
     <div className="admin-dashboard">
@@ -39,28 +63,60 @@ export function AuditLogs() {
         </header>
 
         <section className="admin-dashboard__content-card">
-          <div className="admin-dashboard__table-wrap">
-            <table className="admin-dashboard__table">
-              <thead>
-                <tr>
-                  <th>Time</th>
-                  <th>User</th>
-                  <th>Action</th>
-                  <th>Details</th>
-                </tr>
-              </thead>
-              <tbody>
-                {logs.map((log) => (
-                  <tr key={log.id}>
-                    <td>{new Date(log.createdAt).toLocaleString()}</td>
-                    <td>{log.username}</td>
-                    <td>{log.action}</td>
-                    <td>{log.details}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="admin-dashboard__filters">
+            <input
+              type="text"
+              placeholder="Filter by action..."
+              value={actionFilter}
+              onChange={(e) => setActionFilter(e.target.value)}
+              className="admin-dashboard__filter-input"
+            />
+            <input
+              type="text"
+              placeholder="Filter by user ID..."
+              value={userIdFilter}
+              onChange={(e) => setUserIdFilter(e.target.value)}
+              className="admin-dashboard__filter-input"
+            />
+            <button className="btn btn-primary" onClick={loadLogs}>Apply Filters</button>
+            <button className="btn btn-secondary" onClick={handleExport}>Export CSV</button>
           </div>
+
+          {error && <div className="error">{error}</div>}
+          {loading && <p>Loading audit logs…</p>}
+
+          {!loading && (
+            <div className="admin-dashboard__table-wrap">
+              <table className="admin-dashboard__table">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>User</th>
+                    <th>Action</th>
+                    <th>Details</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {logs.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} style={{ textAlign: 'center', padding: '2rem' }}>
+                        No audit logs found
+                      </td>
+                    </tr>
+                  ) : (
+                    logs.map((log) => (
+                      <tr key={log.id}>
+                        <td>{new Date(log.createdAt).toLocaleString()}</td>
+                        <td>{log.username}</td>
+                        <td>{log.action}</td>
+                        <td>{log.details}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
       </main>
     </div>
