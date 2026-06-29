@@ -49,6 +49,11 @@ router.get('/', authenticate, authorize({ permission: 'canViewDocuments' }), asy
           where.push(`(LOWER(title) LIKE $${params.length} OR LOWER(taxpayer_name) LIKE $${params.length})`)
         }
 
+        if (category && category !== 'all') {
+          params.push(String(category))
+          where.push(`category = $${params.length}`)
+        }
+
         if (type && type !== 'all') {
           params.push(String(type))
           where.push(`type = $${params.length}`)
@@ -92,6 +97,18 @@ router.get('/', authenticate, authorize({ permission: 'canViewDocuments' }), asy
           d.type?.toLowerCase().includes(term) ||
           d.taxpayerName?.toLowerCase().includes(term),
       )
+    }
+
+    if (category && category !== 'all') {
+      results = results.filter((d) => String(d.category || 'Other').toLowerCase() === String(category).toLowerCase())
+    }
+
+    if (type && type !== 'all') {
+      results = results.filter((d) => String(d.type || '').toLowerCase() === String(type).toLowerCase())
+    }
+
+    if (status && status !== 'all') {
+      results = results.filter((d) => String(d.status || '').toLowerCase() === String(status).toLowerCase())
     }
 
     res.json({ documents: results, total: results.length })

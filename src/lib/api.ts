@@ -1,4 +1,17 @@
-const API_BASE: string = (import.meta.env.VITE_API_BASE as string) || '/api'
+const API_BASE: string = (import.meta.env.VITE_API_BASE as string | undefined) || '/api'
+
+function buildUrl(path: string): string {
+  const normalizedBase = API_BASE.replace(/\/$/, '')
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+
+  if (normalizedPath.startsWith('/api')) {
+    return `${normalizedBase}${normalizedPath}`
+  }
+
+  const baseHasApiPrefix = normalizedBase.endsWith('/api')
+  const prefix = baseHasApiPrefix ? '' : '/api'
+  return `${normalizedBase}${prefix}${normalizedPath}`
+}
 
 export class ApiError extends Error {
   status: number
@@ -39,7 +52,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs)
 
   try {
-    const response = await fetch(`${API_BASE}${path}`, {
+    const response = await fetch(buildUrl(path), {
       ...options,
       headers,
       signal: controller.signal,
@@ -340,19 +353,18 @@ export interface AIPrompt {
 
 export const api = {
   login(username: string, password: string) {
-    return request<LoginResponse>('/api/auth/login', {
-
+    return request<LoginResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ username, password }),
     })
   },
 
   me() {
-    return request<{ user: AuthUser }>('/api/auth/me')
+    return request<{ user: AuthUser }>('/auth/me')
   },
 
   logout() {
-    return request<{ message: string }>('/api/auth/logout', { method: 'POST' })
+    return request<{ message: string }>('/auth/logout', { method: 'POST' })
   },
 
   getDashboardStats() {
@@ -448,10 +460,13 @@ export const api = {
   },
 
 
-  getDocuments(params?: { taxpayerTin?: string; q?: string }) {
+  getDocuments(params?: { taxpayerTin?: string; q?: string; category?: string; type?: string; status?: string }) {
     const search = new URLSearchParams()
     if (params?.taxpayerTin) search.set('taxpayerTin', params.taxpayerTin)
     if (params?.q) search.set('q', params.q)
+    if (params?.category && params.category !== 'all') search.set('category', params.category)
+    if (params?.type && params.type !== 'all') search.set('type', params.type)
+    if (params?.status && params.status !== 'all') search.set('status', params.status)
     const query = search.toString()
     return request<{ documents: DocumentItem[]; total: number }>(`/documents${query ? `?${query}` : ''}`)
   },
@@ -475,6 +490,13 @@ export const api = {
 
   getUsers() {
     return request<UserItem[]>('/users')
+  },
+
+  createUser(data: { username: string; fullName: string; email?: string; password: string; role?: string }) {
+    return request<UserItem>('/users', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
   },
 
   getNotifications(params?: { unreadOnly?: boolean; type?: string; category?: string; priority?: string; limit?: number; offset?: number }) {
