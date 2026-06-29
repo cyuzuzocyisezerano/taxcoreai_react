@@ -8,6 +8,7 @@ const clientUrls = String(clientUrlEnv)
   .map((s) => s.trim())
   .filter(Boolean)
 
+
 export const config = {
   port: Number(process.env.PORT) || 3001,
   jwtSecret: process.env.JWT_SECRET || 'taxcoreai-dev-secret-change-in-production',

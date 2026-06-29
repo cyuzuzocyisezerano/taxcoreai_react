@@ -1,0 +1,20 @@
+{
+  "audit_risk_mae": 4.24,
+  "filing_risk_auc": 0.9861,
+  "features": [
+    "has_email",
+    "has_phone",
+    "has_address",
+    "has_category",
+    "has_reg_date",
+    "doc_count",
+    "filing_count",
+    "days_since_last_filing",
+    "late_filings",
+    "penalties_count",
+    "status_ok",
+    "is_flagged",
+    "years_registered",
+    "is_business"
+  ]
+}

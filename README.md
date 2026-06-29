@@ -73,6 +73,43 @@ taxcoreai/
 
 Data is stored in `server/src/data/db.json` (created on first run from seed data).
 
+## Core modules implemented
+
+This project implements the TaxCoreAI modules described in the system design:
+
+- **User & Role Management Module**
+  - Authentication and session management via JWT
+  - Role-based access control using `src/lib/permissions.ts` and backend `server/src/middleware/authorize.js`
+  - Role-specific dashboards for Admin, Officer, Auditor, and Supervisor
+- **Taxpayer Registration & Profile Module**
+  - Taxpayer list, search, and detail routes under `/api/taxpayers`
+  - Taxpayer registration flow and profile metadata in the React frontend
+- **Document Management Module**
+  - Document listing, upload, retrieval, and secure file handling under `/api/documents`
+  - Metadata support for document type, taxpayer TIN, upload timestamp, and title
+- **Records Indexing & Search Module**
+  - Search endpoint at `/api/search`
+  - Search UI in `src/pages/SearchRetrieval.tsx`
+  - Fast record retrieval across taxpayers and documents using indexed query filters
+- **Workflow & Records Processing Module**
+  - Workflow listing under `/api/workflows`
+  - Workflow dashboard UI for review and approval tracking
+- **Notification & Alert Module**
+  - Notification endpoint `/api/notifications`
+  - Notification page and sidebar access
+- **Monitoring & Control Dashboard**
+  - Admin, Auditor, and Supervisor dashboards with system performance and counts
+  - Dashboard stats API under `/api/dashboard/stats`
+- **Reporting & Analytics Module**
+  - Reports endpoint `/api/reports`
+  - Analytics dashboard in the frontend
+- **Audit & Compliance Module**
+  - Audit log endpoint `/api/audit-logs`
+  - Audit trail logging for data changes and permission denials
+- **Security & Data Protection Module**
+  - Secure API routes with JWT auth and RBAC
+  - File upload validation and role-aware access enforcement
+
 ## Environment
 
 Copy `server/.env.example` to `server/.env` and set:

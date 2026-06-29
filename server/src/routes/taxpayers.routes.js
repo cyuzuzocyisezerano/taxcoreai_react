@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { loadDb, saveDb } from '../data/store.js'
 import { authenticate } from '../middleware/auth.js'
 import { logAudit } from '../services/audit.service.js'
+import { authorize } from '../middleware/authorize.js'
 
 const router = Router()
 
@@ -21,7 +22,7 @@ async function queryPg(sql, params = []) {
   return res.rows
 }
 
-router.get('/', async (req, res, next) => {
+router.get('/', authenticate, authorize({ permission: 'canViewTaxpayers' }), async (req, res, next) => {
   try {
     const { q, status, type } = req.query
 
@@ -46,7 +47,7 @@ router.get('/', async (req, res, next) => {
       }
 
       const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : ''
-      const sql = `SELECT id, name, tin, type, district, status, registered, alias FROM taxpayers ${whereClause} ORDER BY registered DESC LIMIT 100` 
+      const sql = `SELECT id, name, tin, type, district, status, registered, alias, business_name, address, contact, email, phone, tax_regime, business_activity, bank_name, bank_account, authorized_representative, representative_id, representative_contact FROM taxpayers ${whereClause} ORDER BY registered DESC LIMIT 100`
       const rows = await queryPg(sql, params)
       return res.json({ taxpayers: rows, total: rows.length })
     }
@@ -79,11 +80,11 @@ router.get('/', async (req, res, next) => {
   }
 })
 
-router.get('/:id', async (req, res, next) => {
+router.get('/:id', authenticate, authorize({ permission: 'canViewTaxpayers' }), async (req, res, next) => {
   try {
     if (usePg) {
       const id = req.params.id
-      const rows = await queryPg('SELECT id, name, tin, type, district, status, registered, alias FROM taxpayers WHERE id = $1 OR tin = $1 LIMIT 1', [id])
+      const rows = await queryPg('SELECT id, name, tin, type, district, status, registered, alias, business_name, address, contact, email, phone, tax_regime, business_activity, bank_name, bank_account, authorized_representative, representative_id, representative_contact FROM taxpayers WHERE id = $1 OR tin = $1 LIMIT 1', [id])
       if (!rows.length) return res.status(404).json({ error: 'Taxpayer not found' })
       return res.json({ taxpayer: rows[0] })
     }
@@ -101,9 +102,28 @@ router.get('/:id', async (req, res, next) => {
   }
 })
 
-router.post('/', authenticate, async (req, res, next) => {
+router.post('/', authenticate, authorize({ permission: 'canAddTaxpayers', actionType: 'TAXPAYER_CREATE' }), async (req, res, next) => {
   try {
-    const { name, tin, type, district, status, alias } = req.body
+    const {
+      name,
+      tin,
+      type,
+      district,
+      status,
+      alias,
+      businessName,
+      address,
+      contact,
+      email,
+      phone,
+      taxRegime,
+      businessActivity,
+      bankName,
+      bankAccount,
+      authorizedRepresentative,
+      representativeId,
+      representativeContact,
+    } = req.body
 
     if (!name?.trim() || !tin?.trim() || !type) {
       return res.status(400).json({ error: 'Name, TIN, and type are required' })
@@ -119,8 +139,34 @@ router.post('/', authenticate, async (req, res, next) => {
       const aliasFinal = alias?.trim() || name.trim().split(' ')[0]
 
       await queryPg(
-        'INSERT INTO taxpayers(id, name, tin, type, district, status, registered, alias) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',
-        [id, name.trim(), tin.trim(), type, district?.trim() || 'Gasabo', status || 'Pending', registered, aliasFinal],
+        `INSERT INTO taxpayers(
+          id, name, tin, type, district, status, registered, alias,
+          business_name, address, contact, email, phone, tax_regime,
+          business_activity, bank_name, bank_account,
+          authorized_representative, representative_id, representative_contact
+        ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)`,
+        [
+          id,
+          name.trim(),
+          tin.trim(),
+          type,
+          district?.trim() || 'Gasabo',
+          status || 'Pending',
+          registered,
+          aliasFinal,
+          businessName?.trim() || null,
+          address?.trim() || null,
+          contact?.trim() || null,
+          email?.trim() || null,
+          phone?.trim() || null,
+          taxRegime || null,
+          businessActivity?.trim() || null,
+          bankName?.trim() || null,
+          bankAccount?.trim() || null,
+          authorizedRepresentative?.trim() || null,
+          representativeId?.trim() || null,
+          representativeContact?.trim() || null,
+        ],
       )
 
       await logAudit({
@@ -130,7 +176,7 @@ router.post('/', authenticate, async (req, res, next) => {
         details: `Registered taxpayer ${name.trim()} (${tin.trim()})`,
       })
 
-      const rows = await queryPg('SELECT id, name, tin, type, district, status, registered, alias FROM taxpayers WHERE id = $1 LIMIT 1', [id])
+      const rows = await queryPg('SELECT id, name, tin, type, district, status, registered, alias, business_name, address, contact, email, phone, tax_regime, business_activity, bank_name, bank_account, authorized_representative, representative_id, representative_contact FROM taxpayers WHERE id = $1 LIMIT 1', [id])
       return res.status(201).json({ taxpayer: rows[0] })
     }
 
@@ -153,6 +199,18 @@ router.post('/', authenticate, async (req, res, next) => {
         year: 'numeric',
       }),
       alias: alias?.trim() || name.trim().split(' ')[0],
+      businessName: businessName?.trim() || undefined,
+      address: address?.trim() || undefined,
+      contact: contact?.trim() || undefined,
+      email: email?.trim() || undefined,
+      phone: phone?.trim() || undefined,
+      taxRegime: taxRegime || undefined,
+      businessActivity: businessActivity?.trim() || undefined,
+      bankName: bankName?.trim() || undefined,
+      bankAccount: bankAccount?.trim() || undefined,
+      authorizedRepresentative: authorizedRepresentative?.trim() || undefined,
+      representativeId: representativeId?.trim() || undefined,
+      representativeContact: representativeContact?.trim() || undefined,
     }
 
     db.taxpayers.unshift(taxpayer)
@@ -171,25 +229,31 @@ router.post('/', authenticate, async (req, res, next) => {
   }
 })
 
-router.patch('/:id', authenticate, async (req, res, next) => {
+router.patch('/:id', authenticate, authorize({ permission: 'canEditTaxpayers', actionType: 'TAXPAYER_UPDATE' }), async (req, res, next) => {
   try {
     if (usePg) {
       const id = req.params.id
-      const allowed = ['name', 'type', 'district', 'status', 'alias']
+      const allowed = [
+        'name', 'type', 'district', 'status', 'alias',
+        'businessName', 'address', 'contact', 'email', 'phone',
+        'taxRegime', 'businessActivity', 'bankName', 'bankAccount',
+        'authorizedRepresentative', 'representativeId', 'representativeContact'
+      ]
       const updates = []
       const params = []
 
       for (const key of allowed) {
         if (req.body[key] !== undefined) {
           params.push(req.body[key])
-          updates.push(`${key} = $${params.length}`)
+          const dbKey = key.replace(/[A-Z]/g, m => '_' + m.toLowerCase())
+          updates.push(`${dbKey} = $${params.length}`)
         }
       }
 
       if (!updates.length) return res.status(400).json({ error: 'No valid fields to update' })
 
       params.push(id)
-      const sql = `UPDATE taxpayers SET ${updates.join(', ')} WHERE id = $${params.length} RETURNING id, name, tin, type, district, status, registered, alias`
+      const sql = `UPDATE taxpayers SET ${updates.join(', ')} WHERE id = $${params.length} RETURNING id, name, tin, type, district, status, registered, alias, business_name, address, contact, email, phone, tax_regime, business_activity, bank_name, bank_account, authorized_representative, representative_id, representative_contact`
       const rows = await queryPg(sql, params)
 
       await logAudit({
@@ -209,7 +273,25 @@ router.patch('/:id', authenticate, async (req, res, next) => {
       return res.status(404).json({ error: 'Taxpayer not found' })
     }
 
-    const allowed = ['name', 'type', 'district', 'status', 'alias']
+    const allowed = [
+      'name',
+      'type',
+      'district',
+      'status',
+      'alias',
+      'businessName',
+      'address',
+      'contact',
+      'email',
+      'phone',
+      'taxRegime',
+      'businessActivity',
+      'bankName',
+      'bankAccount',
+      'authorizedRepresentative',
+      'representativeId',
+      'representativeContact',
+    ]
     const updates = {}
 
     for (const key of allowed) {

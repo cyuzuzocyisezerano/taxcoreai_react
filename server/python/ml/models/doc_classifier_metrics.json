@@ -1,0 +1,10 @@
+{
+  "coarse": {
+    "accuracy": 1.0,
+    "cv_f1": 1.0
+  },
+  "fine": {
+    "accuracy": 1.0,
+    "cv_f1": 1.0
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "regressor": {
+    "mae": 5.84,
+    "r2": 0.87,
+    "cv_r2": 0.8624
+  },
+  "classifier": {
+    "cv_f1": 0.8251
+  },
+  "features": [
+    "has_email",
+    "has_phone",
+    "has_address",
+    "has_category",
+    "has_reg_date",
+    "doc_count",
+    "filing_count",
+    "days_since_last_filing",
+    "late_filings",
+    "penalties_count",
+    "status_ok",
+    "is_flagged",
+    "years_registered",
+    "is_business"
+  ]
+}

@@ -1,172 +1,250 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState, useCallback } from 'react'
 import { AdminSidebar } from '../components/AdminSidebar'
-import { api, type DocumentItem } from '../lib/api'
-import UploadModal from '../components/UploadModal'
+import { useAuth } from '../context/AuthContext'
+import { api, type DocumentItem, type Taxpayer } from '../lib/api'
 import './AdminDashboard.css'
 
 export function Documents() {
+  const { user } = useAuth()
   const [documents, setDocuments] = useState<DocumentItem[]>([])
+  const [taxpayers, setTaxpayers] = useState<Taxpayer[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [showUploadModal, setShowUploadModal] = useState(false)
   const [search, setSearch] = useState('')
-  const [selectedType, setSelectedType] = useState('all')
+  const [categoryFilter, setCategoryFilter] = useState<string>('all')
+  const [typeFilter, setTypeFilter] = useState<string>('all')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [selectedDocument, setSelectedDocument] = useState<DocumentItem | null>(null)
+  const [showPreview, setShowPreview] = useState(false)
 
-  const navigate = useNavigate()
+  const role = user?.role ?? 'Admin'
+  const title = user?.title ?? 'System Administrator'
 
-  useEffect(() => {
-    let mounted = true
+  const loadDocuments = useCallback(async () => {
+    setLoading(true)
+    try {
+      const params: any = {}
+      if (search) params.q = search
+      if (categoryFilter !== 'all') params.category = categoryFilter
+      if (typeFilter !== 'all') params.type = typeFilter
+      if (statusFilter !== 'all') params.status = statusFilter
 
-    async function load() {
-      try {
-        const res = await api.getDocuments()
-        if (mounted) setDocuments(res.documents || [])
-      } catch (err: any) {
-        if (mounted) setError(err?.message || 'Failed to load documents')
-      } finally {
-        if (mounted) setLoading(false)
-      }
+      const data = await api.getDocuments(params)
+      setDocuments(data.documents || [])
+    } catch (e) {
+      console.error('Failed to load documents:', e)
+    } finally {
+      setLoading(false)
     }
+  }, [search, categoryFilter, typeFilter, statusFilter])
 
-    load()
-    return () => {
-      mounted = false
+  const loadTaxpayers = useCallback(async () => {
+    try {
+      const data = await api.getTaxpayers()
+      setTaxpayers(data.taxpayers || [])
+    } catch (e) {
+      console.error('Failed to load taxpayers:', e)
     }
   }, [])
 
-  const typeOptions = useMemo(() => {
-    const types = Array.from(new Set(documents.map((doc) => doc.type).filter(Boolean)))
-    return ['all', ...types]
-  }, [documents])
+  useEffect(() => {
+    loadDocuments()
+    loadTaxpayers()
+  }, [loadDocuments, loadTaxpayers])
 
-  const normalizedSearch = search.trim().toLowerCase()
-  const filteredDocuments = useMemo(() => {
-    return documents.filter((doc) => {
-      const matchesSearch = !normalizedSearch || [doc.title, doc.type, doc.taxpayerTin, doc.taxpayerName]
-        .filter(Boolean)
-        .some((value) => value?.toLowerCase().includes(normalizedSearch))
-      const matchesType = selectedType === 'all' || doc.type === selectedType
-      return matchesSearch && matchesType
-    })
-  }, [documents, normalizedSearch, selectedType])
+  async function handleExport(format: 'json' | 'csv') {
+    try {
+      const response = await fetch(`/api/documents/export?format=${format}`)
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `documents.${format}`
+      a.click()
+    } catch (e: any) {
+      alert(e?.message || 'Export failed')
+    }
+  }
+
+  async function handleViewDocument(doc: DocumentItem) {
+    setSelectedDocument(doc)
+    setShowPreview(true)
+  }
+
+  async function handleDeleteDocument(docId: string) {
+    if (!confirm('Are you sure you want to delete this document?')) return
+
+    try {
+      await api.deleteDocument(docId)
+      loadDocuments()
+    } catch (e: any) {
+      alert(e?.message || 'Delete failed')
+    }
+  }
 
   return (
     <div className="admin-dashboard">
-      <AdminSidebar role="Officer" title="Taxpayer Officer" />
+      <AdminSidebar role={role} title={title} />
 
       <main className="admin-dashboard__main">
         <header className="admin-dashboard__topbar">
           <div>
             <p className="admin-dashboard__breadcrumb">Documents</p>
             <h1>Document Management</h1>
-            <p className="admin-dashboard__hero-text">{loading ? 'Loading documents...' : `${filteredDocuments.length} documents in the system`}</p>
+            <p className="admin-dashboard__hero-text">{documents.length} documents found</p>
           </div>
-
           <div className="admin-dashboard__topbar-actions">
-            <div className="admin-dashboard__search">
-              <input
-                type="search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by title, taxpayer, or document"
-              />
-            </div>
-
-            <select
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
-            >
-              {typeOptions.map((typeOption) => (
-                <option key={typeOption} value={typeOption}>
-                  {typeOption === 'all' ? 'All Types' : typeOption}
-                </option>
-              ))}
-            </select>
-
-            <button className="btn btn-primary" type="button" onClick={() => setShowUploadModal(true)}>
+            <button className="btn btn-secondary" type="button" onClick={() => handleExport('csv')}>
+              Export CSV
+            </button>
+            <button className="btn btn-secondary" type="button" onClick={() => window.location.href = '/bulk-upload'}>
+              Bulk Upload
+            </button>
+            <button className="btn btn-primary" type="button" onClick={() => window.location.href = '/upload-document-new'}>
               Upload Document
             </button>
           </div>
         </header>
 
         <section className="admin-dashboard__content-card">
-          {error ? (
-            <div className="rounded-2xl bg-red-50 p-6 text-sm text-red-700">{error}</div>
-          ) : loading ? (
-            <div className="min-h-[240px] flex items-center justify-center text-slate-500">Loading documents...</div>
-          ) : filteredDocuments.length === 0 ? (
-            <div className="space-y-6 text-center">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-slate-100 text-2xl">📄</div>
-              <div>
-                <h2 className="text-xl font-semibold text-slate-900">No documents found</h2>
-                <p className="mt-2 text-sm text-slate-500">
-                  Upload your first document to start tracking taxpayer records, evidence, and audit-ready files in one place.
-                </p>
-              </div>
-              <button className="btn btn-primary" type="button" onClick={() => setShowUploadModal(true)}>
-                Upload First Document
-              </button>
+          <div className="taxpayer-filters">
+            <input
+              type="search"
+              placeholder="Search documents..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+              <option value="all">All Categories</option>
+              <option value="Filing">Filing</option>
+              <option value="Return">Return</option>
+              <option value="Correspondence">Correspondence</option>
+              <option value="License">License</option>
+              <option value="Certificate">Certificate</option>
+              <option value="Contract">Contract</option>
+              <option value="Invoice">Invoice</option>
+              <option value="Receipt">Receipt</option>
+              <option value="Other">Other</option>
+            </select>
+            <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+              <option value="all">All Types</option>
+              <option value="Tax Return">Tax Return</option>
+              <option value="VAT">VAT</option>
+              <option value="Compliance">Compliance</option>
+              <option value="Invoice">Invoice</option>
+              <option value="Other">Other</option>
+            </select>
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+              <option value="all">All Statuses</option>
+              <option value="Active">Active</option>
+              <option value="Archived">Archived</option>
+              <option value="Expired">Expired</option>
+              <option value="Pending Review">Pending Review</option>
+              <option value="Flagged">Flagged</option>
+            </select>
+          </div>
+
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '48px' }}>Loading documents...</div>
+          ) : documents.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '48px', color: '#64748b' }}>
+              No documents found. Upload your first document to get started.
             </div>
           ) : (
-            <div>
-              <div className="card-header">
-                <div>
-                  <p className="eyebrow">Document Registry</p>
-                  <h2>{filteredDocuments.length} documents available</h2>
-                </div>
-              </div>
-
-              <div className="admin-dashboard__table-wrap">
-                <table className="admin-dashboard__table">
-                  <thead>
-                    <tr>
-                      <th>Document</th>
-                      <th>Taxpayer</th>
-                      <th>Type</th>
-                      <th>Uploaded</th>
-                      <th className="text-right">Action</th>
+            <div className="admin-dashboard__table-wrap">
+              <table className="admin-dashboard__table">
+                <thead>
+                  <tr>
+                    <th>Document</th>
+                    <th>Category</th>
+                    <th>Type</th>
+                    <th>Taxpayer</th>
+                    <th>Status</th>
+                    <th>Uploaded</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {documents.map((doc) => (
+                    <tr key={doc.id}>
+                      <td>
+                        <strong>{doc.title}</strong>
+                        {doc.fileName && <span style={{ display: 'block', fontSize: '0.875rem', color: '#64748b' }}>{doc.fileName}</span>}
+                      </td>
+                      <td>{doc.category || 'Other'}</td>
+                      <td>{doc.type}</td>
+                      <td>{doc.taxpayerName || '—'}</td>
+                      <td>
+                        <span className={`status status--${(doc.status || 'Active').toLowerCase().replace(' ', '-')}`}>
+                          {doc.status || 'Active'}
+                        </span>
+                      </td>
+                      <td>{doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : '—'}</td>
+                      <td>
+                        <button className="btn btn-ghost" onClick={() => handleViewDocument(doc)}>View</button>
+                        <button className="btn btn-ghost" onClick={() => handleDeleteDocument(doc.id)}>Delete</button>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {filteredDocuments.map((doc) => (
-                      <tr key={doc.id} className="hover:bg-slate-50">
-                        <td>
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-lg">📄</div>
-                            <div>
-                              <p className="font-semibold text-slate-900">{doc.title}</p>
-                              <span>{doc.fileName ?? doc.type}</span>
-                            </div>
-                          </div>
-                        </td>
-                        <td>{doc.taxpayerName ?? doc.taxpayerTin}</td>
-                        <td>{doc.type || 'Unknown'}</td>
-                        <td>{doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : '—'}</td>
-                        <td className="text-right">
-                          <button
-                            className="btn btn-secondary"
-                            type="button"
-                            onClick={() => navigate(`/documents/${doc.id}`)}
-                          >
-                            Open
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </section>
       </main>
 
-      <UploadModal
-        visible={showUploadModal}
-        onClose={() => setShowUploadModal(false)}
-        onUploaded={(doc) => setDocuments((prev) => [doc, ...prev])}
-      />
+      {/* Document Preview Modal */}
+      {showPreview && selectedDocument && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <header className="flex items-center justify-between px-6 py-4 border-b">
+              <div>
+                <h3 className="text-lg font-semibold">{selectedDocument.title}</h3>
+                <p style={{ fontSize: '0.875rem', color: '#64748b' }}>
+                  {selectedDocument.type} • {selectedDocument.category} • {selectedDocument.status}
+                </p>
+              </div>
+              <button className="text-gray-500 hover:text-gray-700 text-2xl" onClick={() => setShowPreview(false)}>✕</button>
+            </header>
+
+            <div className="p-6 overflow-y-auto flex-1">
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div>
+                  <label style={{ fontWeight: 500 }}>Taxpayer</label>
+                  <p>{selectedDocument.taxpayerName || '—'}</p>
+                </div>
+                <div>
+                  <label style={{ fontWeight: 500 }}>TIN</label>
+                  <p>{selectedDocument.taxpayerTin || '—'}</p>
+                </div>
+                <div>
+                  <label style={{ fontWeight: 500 }}>Uploaded</label>
+                  <p>{selectedDocument.uploadedAt ? new Date(selectedDocument.uploadedAt).toLocaleString() : '—'}</p>
+                </div>
+                <div>
+                  <label style={{ fontWeight: 500 }}>File</label>
+                  <p>{selectedDocument.fileName || '—'}</p>
+                </div>
+              </div>
+
+              {selectedDocument.description && (
+                <div className="mb-6">
+                  <label style={{ fontWeight: 500 }}>Description</label>
+                  <p style={{ marginTop: '4px' }}>{selectedDocument.description}</p>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                <button className="btn btn-secondary" onClick={() => setShowPreview(false)}>Close</button>
+                {selectedDocument.fileName && (
+                  <a href={`/api/documents/${selectedDocument.id}/file`} className="btn btn-primary" target="_blank" rel="noopener noreferrer">
+                    Download
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

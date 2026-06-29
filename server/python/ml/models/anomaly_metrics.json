@@ -1,0 +1,14 @@
+{
+  "isolation_forest_auc": 0.94,
+  "supervised_gbm_auc": 1.0,
+  "supervised_gbm_cv_auc": 1.0,
+  "features": [
+    "filing_amount",
+    "employee_count",
+    "filing_frequency_per_year",
+    "amount_change_pct",
+    "days_between_filings",
+    "same_tin_filing_count",
+    "is_round_amount"
+  ]
+}

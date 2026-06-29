@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { AdminSidebar } from '../components/AdminSidebar'
 import { useAuth } from '../context/AuthContext'
 import { api, type Taxpayer } from '../lib/api'
@@ -41,8 +42,10 @@ export function Taxpayers() {
             <p className="admin-dashboard__hero-text">{total} taxpayers found</p>
           </div>
           <div className="admin-dashboard__topbar-actions">
-            <button className="btn btn-primary">Register Taxpayer</button>
-            <button className="btn btn-secondary">Export</button>
+            <Link to="/taxpayers/register" className="btn btn-primary">
+              Register Taxpayer
+            </Link>
+            <button className="btn btn-secondary" type="button">Export</button>
           </div>
         </header>
 
@@ -57,6 +60,8 @@ export function Taxpayers() {
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
               <option value="all">All Statuses</option>
               <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+              <option value="Suspended">Suspended</option>
               <option value="Pending">Pending</option>
               <option value="Flagged">Flagged</option>
             </select>
@@ -64,6 +69,7 @@ export function Taxpayers() {
               <option value="all">All Types</option>
               <option value="Business">Business</option>
               <option value="Individual">Individual</option>
+              <option value="Organization">Organization</option>
             </select>
           </div>
 
@@ -97,8 +103,12 @@ export function Taxpayers() {
                     </td>
                     <td>{taxpayer.registered}</td>
                     <td>
-                      <button className="btn btn-ghost">View</button>
-                      <button className="btn btn-ghost">Edit</button>
+                      <Link to={`/taxpayers/${taxpayer.id}`} className="btn btn-ghost">
+                        View
+                      </Link>
+                      <Link to={`/taxpayers/${taxpayer.id}`} className="btn btn-ghost">
+                        Edit
+                      </Link>
                     </td>
                   </tr>
                 ))}

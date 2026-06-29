@@ -10,15 +10,20 @@ let cache = null
 
 const DEFAULT_STATE = {
   notifications: [],
+  notificationPreferences: {},
+  notificationHistory: [],
   workflows: [],
+  workflowBatches: [],
+  workflowComments: [],
+  workflowHistory: [],
+  slaRules: [],
   reports: [],
   settings: {},
   aiPrompts: [],
+  auditLogs: [],
 }
 
 export async function loadDb() {
-  if (cache) return cache
-
   try {
     const raw = await fs.readFile(DB_PATH, 'utf8')
     const parsed = JSON.parse(raw)

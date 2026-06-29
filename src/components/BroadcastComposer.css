@@ -1,0 +1,223 @@
+.broadcast-composer__trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.broadcast-composer__trigger:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.broadcast-composer__icon {
+  font-size: 18px;
+}
+
+.broadcast-composer {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  z-index: 2000;
+}
+
+.broadcast-composer__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.broadcast-composer__header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.broadcast-composer__close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.broadcast-composer__close:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.broadcast-composer__form {
+  padding: 24px;
+}
+
+.broadcast-composer__error {
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.broadcast-composer__success {
+  background: #d1fae5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.broadcast-composer__form .form-group {
+  margin-bottom: 20px;
+}
+
+.broadcast-composer__form label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.broadcast-composer__form input[type="text"],
+.broadcast-composer__form textarea,
+.broadcast-composer__form select,
+.broadcast-composer__form input[type="datetime-local"] {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.broadcast-composer__form input:focus,
+.broadcast-composer__form textarea:focus,
+.broadcast-composer__form select:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.broadcast-composer__form input:disabled,
+.broadcast-composer__form textarea:disabled,
+.broadcast-composer__form select:disabled {
+  background: #f9fafb;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.broadcast-composer__form textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.channel-checkboxes {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.channel-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.channel-checkbox:hover {
+  background: #f9fafb;
+  border-color: #2563eb;
+}
+
+.channel-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.broadcast-composer__actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+  margin-top: 24px;
+}
+
+/* Overlay */
+.broadcast-composer::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: -1;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .broadcast-composer {
+    width: 95%;
+    max-height: 95vh;
+  }
+
+  .broadcast-composer__header {
+    padding: 16px 20px;
+  }
+
+  .broadcast-composer__form {
+    padding: 20px;
+  }
+
+  .channel-checkboxes {
+    flex-direction: column;
+  }
+
+  .broadcast-composer__actions {
+    flex-direction: column-reverse;
+  }
+
+  .broadcast-composer__actions button {
+    width: 100%;
+  }
+}

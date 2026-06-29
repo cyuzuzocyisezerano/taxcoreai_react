@@ -1,0 +1,93 @@
+{
+  "data_generation": {
+    "duration_s": 7.91
+  },
+  "document_classifier": {
+    "coarse": {
+      "accuracy": 1.0,
+      "cv_f1": 1.0
+    },
+    "fine": {
+      "accuracy": 1.0,
+      "cv_f1": 1.0
+    },
+    "duration_s": 83.75
+  },
+  "compliance_scorer": {
+    "regressor": {
+      "mae": 5.84,
+      "r2": 0.87,
+      "cv_r2": 0.8624
+    },
+    "classifier": {
+      "cv_f1": 0.8251
+    },
+    "features": [
+      "has_email",
+      "has_phone",
+      "has_address",
+      "has_category",
+      "has_reg_date",
+      "doc_count",
+      "filing_count",
+      "days_since_last_filing",
+      "late_filings",
+      "penalties_count",
+      "status_ok",
+      "is_flagged",
+      "years_registered",
+      "is_business"
+    ],
+    "duration_s": 10.78
+  },
+  "anomaly_detector": {
+    "isolation_forest_auc": 0.94,
+    "supervised_gbm_auc": 1.0,
+    "supervised_gbm_cv_auc": 1.0,
+    "features": [
+      "filing_amount",
+      "employee_count",
+      "filing_frequency_per_year",
+      "amount_change_pct",
+      "days_between_filings",
+      "same_tin_filing_count",
+      "is_round_amount"
+    ],
+    "duration_s": 3.31
+  },
+  "search_engine": {
+    "articles": 15,
+    "features": 1196,
+    "faiss": true,
+    "duration_s": 0.63
+  },
+  "risk_engine": {
+    "audit_risk_mae": 4.24,
+    "filing_risk_auc": 0.9861,
+    "features": [
+      "has_email",
+      "has_phone",
+      "has_address",
+      "has_category",
+      "has_reg_date",
+      "doc_count",
+      "filing_count",
+      "days_since_last_filing",
+      "late_filings",
+      "penalties_count",
+      "status_ok",
+      "is_flagged",
+      "years_registered",
+      "is_business"
+    ],
+    "duration_s": 1.45
+  },
+  "entity_extractor": {
+    "status": "ready",
+    "type": "rule_based",
+    "duration_s": 0.01
+  },
+  "total_training_time_s": 107.84,
+  "trained_at": "2026-05-08T15:14:02.811006",
+  "models_saved": 15
+}
