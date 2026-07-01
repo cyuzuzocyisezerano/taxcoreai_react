@@ -675,6 +675,21 @@ export const api = {
     return request<{ tasks: WorkflowItem[]; total: number }>('/workflows/tasks/pending')
   },
 
+  getUnassignedWorkflows() {
+    return request<{ workflows: WorkflowItem[]; total: number }>('/workflows/unassigned')
+  },
+
+  getWorkflowUsers() {
+    return request<{ users: { id: string; username: string; full_name: string; role: string }[] }>('/workflows/users')
+  },
+
+  assignWorkflow(id: string, userId: string, comment?: string) {
+    return request<{ workflow: WorkflowItem }>(`/workflows/${encodeURIComponent(id)}/assign`, {
+      method: 'POST',
+      body: JSON.stringify({ userId, comment }),
+    })
+  },
+
   getWorkflowAnalyticsSLA() {
     return request<WorkflowAnalytics>('/workflows/analytics/sla')
   },

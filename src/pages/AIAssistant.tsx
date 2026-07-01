@@ -327,14 +327,6 @@ export function AIAssistant() {
         <div className="ai-input-area">
           <form onSubmit={handleSubmit}>
             <div className="ai-input-wrapper">
-              <div className="ai-input-toolbar">
-                <button type="button" className="ai-input-toolbar-btn" title="Attach file">
-                  📎
-                </button>
-                <button type="button" className="ai-input-toolbar-btn" title="Voice input">
-                  🎤
-                </button>
-              </div>
               <textarea
                 ref={inputRef}
                 className="ai-input-textarea"

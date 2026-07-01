@@ -50,7 +50,7 @@ export function AuditorSidebar({ role, title }: AuditorSidebarProps) {
       </div>
 
       <div className="admin-dashboard__role-card">
-        <span className="role-badge" style={{ backgroundColor: '#4f46e5' }}>
+        <span className="role-badge">
           {role}
         </span>
         <p>{title}</p>

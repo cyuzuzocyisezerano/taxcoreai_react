@@ -8,7 +8,12 @@ class RuleBasedAI {
     this.rules = []
     this.patterns = []
     this.quickActions = []
+    this.db = null
     this.initializeRules()
+  }
+
+  setDatabase(db) {
+    this.db = db
   }
 
   initializeRules() {
@@ -31,6 +36,12 @@ class RuleBasedAI {
         patterns: [/what\s+documents?\s+(?:do\s+i\s+)?need/i, /required\s+documents?/i, /documents?\s+required/i, /document\s+requirements/i],
         intent: 'document_requirements',
         description: 'Get information about required documents'
+      },
+      {
+        id: 'vat_documents',
+        patterns: [/vat\s+documents?/i, /documents?\s+for\s+vat/i, /vat\s+registration\s+documents?/i, /what\s+do\s+i\s+need\s+for\s+vat/i],
+        intent: 'vat_document_requirements',
+        description: 'Get VAT-specific document requirements'
       },
       {
         id: 'registration_help',
@@ -113,6 +124,31 @@ class RuleBasedAI {
             '• Proof of business address\n' +
             '• Director\'s ID copies\n\n' +
             'Would you like me to help you upload any of these documents?'
+        })
+      },
+      {
+        intent: 'vat_document_requirements',
+        handler: () => ({
+          message: '**VAT Registration Document Requirements:**\n\n' +
+            '**For VAT Registration, you need:**\n\n' +
+            '1. **Business Registration Documents**\n' +
+            '   • RDB Business Registration Certificate\n' +
+            '   • TIN Certificate\n' +
+            '   • Articles of Association\n\n' +
+            '2. **Financial Documents**\n' +
+            '   • Bank account details\n' +
+            '   • Recent financial statements (if applicable)\n' +
+            '   • Proof of turnover (minimum 50M RWF annually)\n\n' +
+            '3. **Taxpayer Information**\n' +
+            '   • Valid TIN\n' +
+            '   • Taxpayer identification details\n' +
+            '   • Contact information\n\n' +
+            '4. **Additional Requirements**\n' +
+            '   • Completed VAT registration form\n' +
+            '   • Supporting schedules\n' +
+            '   • Authorization letter (if using a tax agent)\n\n' +
+            '**Note:** VAT registration is mandatory for businesses with annual turnover exceeding 50M RWF.\n\n' +
+            'Would you like me to help you check if you\'re eligible for VAT registration?'
         })
       },
       {
@@ -287,6 +323,16 @@ class RuleBasedAI {
   async processQuery(query, context = {}) {
     const lowerQuery = query.toLowerCase().trim()
 
+    // Load database if not already loaded
+    if (!this.db) {
+      try {
+        const { loadDb } = await import('../data/store.js')
+        this.db = await loadDb()
+      } catch (err) {
+        console.error('Failed to load database:', err)
+      }
+    }
+
     // Check for greetings
     if (this.isGreeting(lowerQuery)) {
       return {
@@ -370,7 +416,64 @@ class RuleBasedAI {
       }
     }
 
-    // Return search parameters to be used by the API
+    // Search the database for taxpayer information
+    if (this.db) {
+      try {
+        const searchTerm = params.toLowerCase()
+        const taxpayers = this.db.taxpayers || []
+
+        // Search by name, TIN, or email
+        const results = taxpayers.filter(t => 
+          t.name?.toLowerCase().includes(searchTerm) ||
+          t.tin?.toLowerCase().includes(searchTerm) ||
+          t.email?.toLowerCase().includes(searchTerm) ||
+          t.businessName?.toLowerCase().includes(searchTerm)
+        )
+
+        if (results.length > 0) {
+          const taxpayer = results[0] // Return the first match
+          const message = `**Taxpayer Found:**\n\n` +
+            `**Name:** ${taxpayer.name}\n` +
+            `**TIN:** ${taxpayer.tin}\n` +
+            `**Type:** ${taxpayer.type}\n` +
+            `**Status:** ${taxpayer.status}\n` +
+            `**District:** ${taxpayer.district}\n` +
+            `**Registered:** ${new Date(taxpayer.registered).toLocaleDateString()}\n` +
+            (taxpayer.email ? `**Email:** ${taxpayer.email}\n` : '') +
+            (taxpayer.phone ? `**Phone:** ${taxpayer.phone}\n` : '') +
+            (taxpayer.address ? `**Address:** ${taxpayer.address}\n` : '') +
+            (taxpayer.businessName ? `**Business Name:** ${taxpayer.businessName}\n` : '') +
+            `\nWould you like to view more details or documents for this taxpayer?`
+
+          return {
+            message,
+            intent: 'search_taxpayer',
+            data: { taxpayer },
+            quickActions: [
+              { id: 'search_taxpayer', label: '🔍 New Search', query: 'Find taxpayer' },
+              { id: 'workflow_help', label: '📋 View Workflows', query: 'What is my workflow status?' }
+            ]
+          }
+        } else {
+          return {
+            message: `No taxpayer found matching "${params}".\n\n` +
+              `Please check the spelling or try:\n` +
+              `• Full name or partial name\n` +
+              `• TIN number\n` +
+              `• Business name\n\n` +
+              `Would you like to try a different search?`,
+            quickActions: [
+              { id: 'search_taxpayer', label: '🔍 Try Again', query: 'Find taxpayer' },
+              { id: 'registration_help', label: '📝 Register New', query: 'How to register for tax?' }
+            ]
+          }
+        }
+      } catch (err) {
+        console.error('Database search error:', err)
+      }
+    }
+
+    // Fallback if database not available
     return {
       message: `I'll search for: "${params}"\n\nPlease wait while I retrieve the information...`,
       intent: 'search_taxpayer',
@@ -433,6 +536,7 @@ class RuleBasedAI {
       'search_taxpayer': ['workflow_help', 'compliance_check', 'document_help'],
       'check_status': ['search_taxpayer', 'workflow_help', 'compliance_check'],
       'document_requirements': ['registration_help', 'upload_document'],
+      'vat_document_requirements': ['vat_info', 'registration_help'],
       'registration_process': ['document_help', 'contact_help'],
       'compliance_info': ['workflow_help', 'deadline_help'],
       'workflow_status': ['compliance_check', 'search_taxpayer'],

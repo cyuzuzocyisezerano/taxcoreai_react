@@ -1,11 +1,13 @@
 import { useEffect, useState, useCallback } from 'react'
 import { AdminSidebar } from '../components/AdminSidebar'
 import { api, type WorkflowItem, type WorkflowComment, type WorkflowHistoryItem, type WorkflowBatch, type SLARule, type WorkflowAnalytics } from '../lib/api'
+import { useAuth } from '../context/AuthContext'
 import './AdminDashboard.css'
 
-type Tab = 'workflows' | 'batches' | 'sla-rules' | 'analytics'
+type Tab = 'workflows' | 'unassigned' | 'batches' | 'sla-rules' | 'analytics'
 
 export function Workflows() {
+  const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<Tab>('workflows')
   const [workflows, setWorkflows] = useState<WorkflowItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -44,6 +46,16 @@ export function Workflows() {
 
   // Analytics
   const [analytics, setAnalytics] = useState<WorkflowAnalytics | null>(null)
+  
+  // Unassigned workflows for supervisor
+  const [unassignedWorkflows, setUnassignedWorkflows] = useState<WorkflowItem[]>([])
+  
+  // User assignment
+  const [showAssignModal, setShowAssignModal] = useState(false)
+  const [assigningWorkflow, setAssigningWorkflow] = useState<WorkflowItem | null>(null)
+  const [availableUsers, setAvailableUsers] = useState<{ id: string; username: string; full_name: string; role: string }[]>([])
+  const [selectedUserId, setSelectedUserId] = useState('')
+  const [assignComment, setAssignComment] = useState('')
 
   const loadWorkflows = useCallback(async () => {
     try {
@@ -104,6 +116,46 @@ export function Workflows() {
     }
   }, [])
 
+  const loadUnassignedWorkflows = useCallback(async () => {
+    try {
+      const data = await api.getUnassignedWorkflows()
+      setUnassignedWorkflows(data.workflows)
+    } catch (err) {
+      console.error('Failed to load unassigned workflows:', err)
+    }
+  }, [])
+
+  const loadAvailableUsers = useCallback(async () => {
+    try {
+      const data = await api.getWorkflowUsers()
+      setAvailableUsers(data.users)
+    } catch (err) {
+      console.error('Failed to load users:', err)
+    }
+  }, [])
+
+  const handleAssignWorkflow = async () => {
+    if (!assigningWorkflow || !selectedUserId) return
+    try {
+      await api.assignWorkflow(assigningWorkflow.id, selectedUserId, assignComment || undefined)
+      setShowAssignModal(false)
+      setAssigningWorkflow(null)
+      setSelectedUserId('')
+      setAssignComment('')
+      await loadWorkflows()
+      await loadUnassignedWorkflows()
+    } catch (err) {
+      console.error('Failed to assign workflow:', err)
+      alert('Failed to assign workflow')
+    }
+  }
+
+  const openAssignModal = async (workflow: WorkflowItem) => {
+    setAssigningWorkflow(workflow)
+    setShowAssignModal(true)
+    await loadAvailableUsers()
+  }
+
   useEffect(() => {
     if (activeTab === 'workflows') {
       loadWorkflows()
@@ -113,8 +165,10 @@ export function Workflows() {
       loadSlaRules()
     } else if (activeTab === 'analytics') {
       loadAnalytics()
+    } else if (activeTab === 'unassigned') {
+      loadUnassignedWorkflows()
     }
-  }, [activeTab, loadWorkflows, loadBatches, loadSlaRules, loadAnalytics])
+  }, [activeTab, loadWorkflows, loadBatches, loadSlaRules, loadAnalytics, loadUnassignedWorkflows])
 
   useEffect(() => {
     if (selectedWorkflow) {
@@ -300,6 +354,32 @@ export function Workflows() {
             Workflows
           </button>
           <button
+            className={`admin-dashboard__tab ${activeTab === 'unassigned' ? 'admin-dashboard__tab--active' : ''}`}
+            onClick={() => setActiveTab('unassigned')}
+            style={{ position: 'relative' }}
+          >
+            Unassigned
+            {unassignedWorkflows.length > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: '-8px',
+                right: '-8px',
+                backgroundColor: '#dc2626',
+                color: 'white',
+                borderRadius: '50%',
+                width: '20px',
+                height: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.75rem',
+                fontWeight: 700
+              }}>
+                {unassignedWorkflows.length}
+              </span>
+            )}
+          </button>
+          <button
             className={`admin-dashboard__tab ${activeTab === 'batches' ? 'admin-dashboard__tab--active' : ''}`}
             onClick={() => setActiveTab('batches')}
           >
@@ -464,6 +544,94 @@ export function Workflows() {
           </>
         )}
 
+        {/* Unassigned Workflows Tab */}
+        {activeTab === 'unassigned' && (
+          <section className="admin-dashboard__content-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h2>Unassigned Workflows</h2>
+              <button className="btn btn-secondary" onClick={loadUnassignedWorkflows}>Refresh</button>
+            </div>
+            {unassignedWorkflows.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '3rem', color: '#6b7280' }}>
+                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✓</div>
+                <p style={{ fontSize: '1.125rem', fontWeight: 500, marginBottom: '0.5rem' }}>All workflows assigned</p>
+                <p>There are no unassigned workflows at this time.</p>
+              </div>
+            ) : (
+              <div className="admin-dashboard__table-wrap">
+                <table className="admin-dashboard__table">
+                  <thead>
+                    <tr>
+                      <th>Title</th>
+                      <th>Status</th>
+                      <th>Priority</th>
+                      <th>Current Stage</th>
+                      <th>Due Date</th>
+                      <th>Created</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {unassignedWorkflows.map((workflow) => (
+                      <tr key={workflow.id} style={isOverdue(workflow) ? { backgroundColor: '#fef2f2' } : undefined}>
+                        <td>
+                          <div>
+                            <strong>{workflow.title}</strong>
+                            {workflow.taxpayerName && <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>{workflow.taxpayerName}</div>}
+                          </div>
+                        </td>
+                        <td>
+                          <span
+                            style={{
+                              padding: '0.25rem 0.75rem',
+                              borderRadius: '9999px',
+                              fontSize: '0.875rem',
+                              fontWeight: 500,
+                              backgroundColor: `${getStatusColor(workflow.status)}20`,
+                              color: getStatusColor(workflow.status),
+                            }}
+                          >
+                            {workflow.status.replace('_', ' ')}
+                          </span>
+                        </td>
+                        <td>
+                          <span
+                            style={{
+                              padding: '0.25rem 0.75rem',
+                              borderRadius: '9999px',
+                              fontSize: '0.875rem',
+                              fontWeight: 500,
+                              backgroundColor: `${getPriorityColor(workflow.priority)}20`,
+                              color: getPriorityColor(workflow.priority),
+                            }}
+                          >
+                            {workflow.priority}
+                          </span>
+                        </td>
+                        <td>{workflow.currentStage}</td>
+                        <td style={isOverdue(workflow) ? { color: '#dc2626', fontWeight: 600 } : undefined}>
+                          {workflow.dueDate ? new Date(workflow.dueDate).toLocaleDateString() : 'No due date'}
+                          {isOverdue(workflow) && ' (Overdue)'}
+                        </td>
+                        <td>{new Date(workflow.createdAt).toLocaleDateString()}</td>
+                        <td>
+                          <button
+                            className="btn btn-primary"
+                            style={{ padding: '0.25rem 0.75rem', fontSize: '0.875rem' }}
+                            onClick={() => openAssignModal(workflow)}
+                          >
+                            Assign
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        )}
+
         {/* Batches Tab */}
         {activeTab === 'batches' && (
           <section className="admin-dashboard__content-card">
@@ -614,6 +782,76 @@ export function Workflows() {
           </section>
         )}
 
+        {/* Assign Workflow Modal */}
+        {showAssignModal && assigningWorkflow && (
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0,0,0,0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1001,
+            }}
+            onClick={() => setShowAssignModal(false)}
+          >
+            <div
+              style={{
+                backgroundColor: 'white',
+                borderRadius: '0.5rem',
+                maxWidth: '500px',
+                width: '90%',
+                padding: '2rem',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3>Assign Workflow</h3>
+              <p style={{ color: '#6b7280', marginBottom: '1.5rem' }}>
+                Assigning: <strong>{assigningWorkflow.title}</strong>
+              </p>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Select User</label>
+                <select
+                  value={selectedUserId}
+                  onChange={(e) => setSelectedUserId(e.target.value)}
+                  style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }}
+                >
+                  <option value="">-- Select a user --</option>
+                  {availableUsers.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.full_name} ({user.username}) - {user.role}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Comment (Optional)</label>
+                <textarea
+                  value={assignComment}
+                  onChange={(e) => setAssignComment(e.target.value)}
+                  placeholder="Add a comment for this assignment..."
+                  style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', minHeight: '80px' }}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                <button className="btn btn-secondary" onClick={() => setShowAssignModal(false)}>Cancel</button>
+                <button 
+                  className="btn btn-primary" 
+                  onClick={handleAssignWorkflow}
+                  disabled={!selectedUserId}
+                  style={{ opacity: !selectedUserId ? 0.5 : 1 }}
+                >
+                  Assign
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Workflow Detail Modal */}
         {selectedWorkflow && (
           <div
@@ -706,12 +944,17 @@ export function Workflows() {
                 </div>
               )}
 
-              {/* Actions */}
-              {!['approved', 'rejected'].includes(selectedWorkflow.status) && (
+              {/* Actions - Hide for Auditor role (observation only) */}
+              {!['approved', 'rejected'].includes(selectedWorkflow.status) && user?.role !== 'Auditor' && (
                 <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
                   <button className="btn btn-primary" onClick={() => handleApprove(newComment || undefined)}>Approve</button>
                   <button className="btn btn-secondary" onClick={() => setShowRejectModal(true)}>Reject</button>
                   <button className="btn btn-secondary" onClick={() => setShowEscalateModal(true)}>Escalate</button>
+                  {!selectedWorkflow.assignedTo && (
+                    <button className="btn btn-secondary" onClick={() => openAssignModal(selectedWorkflow)}>
+                      Assign to User
+                    </button>
+                  )}
                 </div>
               )}
 
