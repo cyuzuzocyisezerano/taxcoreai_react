@@ -1,13 +1,21 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { hasPermission, type UserRole } from '../lib/permissions'
 import './AdminSidebar.css'
 
-const SUPERVISOR_NAV_ITEMS = [
+interface NavItem {
+  label: string
+  to: string
+  permission?: keyof import('../lib/permissions').Permissions
+}
+
+const SUPERVISOR_NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', to: '/supervisor' },
-  { label: 'Taxpayers', to: '/taxpayers' },
-  { label: 'Documents', to: '/documents' },
-  { label: 'Workflows', to: '/workflows' },
-  { label: 'Reports & Analytics', to: '/reports-analytics' },
+  { label: 'Taxpayers', to: '/taxpayers', permission: 'canViewTaxpayers' },
+  { label: 'Documents', to: '/documents', permission: 'canViewDocuments' },
+  { label: 'Workflows', to: '/workflows', permission: 'canViewWorkflows' },
+  { label: 'Reports & Analytics', to: '/reports-analytics', permission: 'canViewReports' },
+  { label: 'Audit Logs', to: '/audit-logs', permission: 'canViewAuditLogs' },
   { label: 'Notifications', to: '/notifications' },
 ]
 
@@ -19,11 +27,18 @@ interface SupervisorSidebarProps {
 export function SupervisorSidebar({ role, title }: SupervisorSidebarProps) {
   const { logout } = useAuth()
   const navigate = useNavigate()
+  const effectiveRole = role as UserRole
 
   async function handleLogout() {
     await logout()
     navigate('/login')
   }
+
+  // Filter nav items based on user permissions
+  const visibleItems = SUPERVISOR_NAV_ITEMS.filter((item) => {
+    if (!item.permission) return true
+    return hasPermission(effectiveRole, item.permission)
+  })
 
   return (
     <aside className="admin-dashboard__sidebar" aria-label="Main navigation">
@@ -36,14 +51,14 @@ export function SupervisorSidebar({ role, title }: SupervisorSidebarProps) {
       </div>
 
       <div className="admin-dashboard__role-card">
-        <span className="role-badge" style={{ backgroundColor: '#7c3aed' }}>
+        <span className="role-badge">
           {role}
         </span>
         <p>{title}</p>
       </div>
 
       <nav className="admin-dashboard__nav" aria-label="Dashboard sections">
-        {SUPERVISOR_NAV_ITEMS.map((item) =>
+        {visibleItems.map((item) =>
           item.to.startsWith('/') ? (
             <NavLink
               key={item.label}

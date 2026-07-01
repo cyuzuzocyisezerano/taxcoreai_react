@@ -22,7 +22,7 @@ import { ReportsAnalytics } from './pages/ReportsAnalytics'
 import { AIAssistant } from './pages/AIAssistant'
 import { AuditLogs } from './pages/AuditLogs'
 import { UserManagement } from './pages/UserManagement'
-import { Settings } from './pages/Settings'
+import { SettingsPage } from './pages/SettingsPage'
 import { UnauthorizedPage } from './pages/UnauthorizedPage'
 import { AlertPopup } from './components/AlertPopup'
 import { MonitoringDashboard } from './pages/MonitoringDashboard'
@@ -229,7 +229,7 @@ function App() {
             path="/settings"
             element={
               <Protected>
-                <Settings />
+                <SettingsPage />
               </Protected>
             }
           />

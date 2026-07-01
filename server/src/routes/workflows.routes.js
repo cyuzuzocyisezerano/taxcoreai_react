@@ -9,6 +9,30 @@ const router = Router()
 
 const usePg = Boolean(process.env.DATABASE_URL)
 
+// Helper to transform database row (snake_case) to API format (camelCase)
+function transformWorkflowRow(row) {
+  if (!row) return row
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    documentId: row.document_id,
+    taxpayerTin: row.taxpayer_tin,
+    taxpayerName: row.taxpayer_name,
+    assignedTo: row.assigned_to,
+    status: row.status,
+    priority: row.priority,
+    dueDate: row.due_date,
+    currentStage: row.current_stage,
+    stages: row.stages,
+    rejectionReason: row.rejection_reason,
+    owner: row.owner,
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
 // Get all workflows
 router.get('/', authenticate, authorize({ permission: 'canViewWorkflows' }), async (req, res, next) => {
   try {
@@ -49,7 +73,8 @@ router.get('/', authenticate, authorize({ permission: 'canViewWorkflows' }), asy
         created_at DESC
         LIMIT 100`
       const result = await pool.query(sql, params)
-      return res.json({ workflows: result.rows, total: result.rows.length })
+      const workflows = result.rows.map(transformWorkflowRow)
+      return res.json({ workflows, total: workflows.length })
     }
 
     const db = await loadDb()
@@ -91,7 +116,7 @@ router.get('/:id', authenticate, authorize({ permission: 'canViewWorkflows' }), 
     if (usePg) {
       const result = await pool.query('SELECT * FROM workflows WHERE id = $1 LIMIT 1', [req.params.id])
       if (!result.rows.length) return res.status(404).json({ error: 'Workflow not found' })
-      return res.json({ workflow: result.rows[0] })
+      return res.json({ workflow: transformWorkflowRow(result.rows[0]) })
     }
 
     const db = await loadDb()
@@ -119,7 +144,7 @@ router.post('/', authenticate, authorize({ permission: 'canCreateWorkflows' }), 
         `INSERT INTO workflows (id, title, description, document_id, taxpayer_tin, taxpayer_name, assigned_to, status, priority, due_date, current_stage, stages, owner, created_by, created_at, updated_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
          RETURNING *`,
-        [
+         [
           id,
           title,
           description || '',
@@ -151,7 +176,7 @@ router.post('/', authenticate, authorize({ permission: 'canCreateWorkflows' }), 
         details: `Created workflow: ${title}`
       })
 
-      return res.status(201).json({ workflow: result.rows[0] })
+      return res.status(201).json({ workflow: transformWorkflowRow(result.rows[0]) })
     }
 
     const db = await loadDb()
@@ -241,7 +266,7 @@ router.patch('/:id', authenticate, authorize({ permission: 'canEditWorkflows' })
 
       if (!result.rows.length) return res.status(404).json({ error: 'Workflow not found' })
 
-      const workflow = result.rows[0]
+      const workflow = transformWorkflowRow(result.rows[0])
 
       // Handle stage progression
       if (stageAction && workflow.stages) {
@@ -293,7 +318,7 @@ router.patch('/:id', authenticate, authorize({ permission: 'canEditWorkflows' })
       })
 
       const updated = await pool.query('SELECT * FROM workflows WHERE id = $1', [req.params.id])
-      return res.json({ workflow: updated.rows[0] })
+      return res.json({ workflow: transformWorkflowRow(updated.rows[0]) })
     }
 
     const db = await loadDb()
@@ -357,7 +382,7 @@ router.post('/:id/approve', authenticate, authorize({ permission: 'canApproveWor
 
       if (!result.rows.length) return res.status(404).json({ error: 'Workflow not found' })
 
-      const workflow = result.rows[0]
+      const workflow = transformWorkflowRow(result.rows[0])
 
       if (workflow.stages) {
         const stages = workflow.stages
@@ -397,7 +422,7 @@ router.post('/:id/approve', authenticate, authorize({ permission: 'canApproveWor
       })
 
       const updated = await pool.query('SELECT * FROM workflows WHERE id = $1', [req.params.id])
-      return res.json({ workflow: updated.rows[0] })
+      return res.json({ workflow: transformWorkflowRow(updated.rows[0]) })
     }
 
     const db = await loadDb()
@@ -477,7 +502,7 @@ router.post('/:id/reject', authenticate, authorize({ permission: 'canApproveWork
       })
 
       const updated = await pool.query('SELECT * FROM workflows WHERE id = $1', [req.params.id])
-      return res.json({ workflow: updated.rows[0] })
+      return res.json({ workflow: transformWorkflowRow(updated.rows[0]) })
     }
 
     const db = await loadDb()
@@ -544,7 +569,7 @@ router.post('/:id/escalate', authenticate, authorize({ permission: 'canEditWorkf
       })
 
       const updated = await pool.query('SELECT * FROM workflows WHERE id = $1', [req.params.id])
-      return res.json({ workflow: updated.rows[0] })
+      return res.json({ workflow: transformWorkflowRow(updated.rows[0]) })
     }
 
     const db = await loadDb()
@@ -695,6 +720,166 @@ router.get('/tasks/pending', authenticate, async (req, res, next) => {
       w.assignedTo === userId && !['completed', 'approved', 'rejected'].includes(w.status)
     )
     res.json({ tasks, total: tasks.length })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// Get unassigned workflows (for supervisors to assign)
+router.get('/unassigned', authenticate, authorize({ permission: 'canViewWorkflows' }), async (req, res, next) => {
+  try {
+    if (usePg) {
+      const result = await pool.query(
+        `SELECT * FROM workflows 
+         WHERE assigned_to IS NULL AND status NOT IN ('completed', 'approved', 'rejected')
+         ORDER BY 
+           CASE priority WHEN 'critical' THEN 1 WHEN 'high' THEN 2 WHEN 'medium' THEN 3 WHEN 'low' THEN 4 END,
+           due_date ASC NULLS LAST,
+           created_at DESC`,
+      )
+      const workflows = result.rows.map(transformWorkflowRow)
+      return res.json({ workflows, total: workflows.length })
+    }
+
+    const db = await loadDb()
+    const workflows = db.workflows.filter(w => 
+      w.assignedTo === null && !['completed', 'approved', 'rejected'].includes(w.status)
+    )
+    res.json({ workflows, total: workflows.length })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// Get all users for assignment
+router.get('/users', authenticate, authorize({ permission: 'canViewUsers' }), async (req, res, next) => {
+  try {
+    if (usePg) {
+      const result = await pool.query(
+        `SELECT id, username, full_name, email, role FROM users WHERE is_active = true ORDER BY full_name`
+      )
+      return res.json({ users: result.rows })
+    }
+
+    const db = await loadDb()
+    const users = (db.users || []).filter(u => u.isActive !== false).map(u => ({
+      id: u.id,
+      username: u.username,
+      full_name: u.fullName || u.username,
+      email: u.email,
+      role: u.role
+    }))
+    res.json({ users })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// Assign workflow to user
+router.post('/:id/assign', authenticate, authorize({ permission: 'canEditWorkflows' }), async (req, res, next) => {
+  try {
+    const { userId, comment } = req.body
+
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required for assignment' })
+    }
+
+    if (usePg) {
+      // Get workflow details
+      const workflowResult = await pool.query('SELECT * FROM workflows WHERE id = $1 LIMIT 1', [req.params.id])
+      if (!workflowResult.rows.length) return res.status(404).json({ error: 'Workflow not found' })
+
+      const workflow = workflowResult.rows[0]
+
+      // Get user details
+      const userResult = await pool.query('SELECT id, username, full_name, role FROM users WHERE id = $1 LIMIT 1', [userId])
+      if (!userResult.rows.length) return res.status(404).json({ error: 'User not found' })
+
+      const user = userResult.rows[0]
+
+      // Update workflow assignment
+      const updateResult = await pool.query(
+        `UPDATE workflows 
+         SET assigned_to = $1, updated_at = CURRENT_TIMESTAMP
+         WHERE id = $2
+         RETURNING *`,
+        [userId, req.params.id]
+      )
+
+      const updatedWorkflow = transformWorkflowRow(updateResult.rows[0])
+
+      // Add comment if provided
+      if (comment) {
+        await pool.query(
+          `INSERT INTO workflow_comments (id, workflow_id, user_id, username, comment, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          [`comment-${Date.now()}`, req.params.id, req.user.sub, req.user.username, `Assigned to ${user.full_name}: ${comment}`, new Date()]
+        )
+      }
+
+      // Add to history
+      await pool.query(
+        `INSERT INTO workflow_history (id, workflow_id, action, from_status, to_status, user_id, username, comment, metadata, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+        [
+          `hist-${Date.now()}`,
+          req.params.id,
+          'ASSIGN',
+          workflow.assigned_to || 'unassigned',
+          userId,
+          req.user.sub,
+          req.user.username,
+          comment || null,
+          JSON.stringify({ assignedTo: userId, assignedToName: user.full_name }),
+          new Date()
+        ]
+      )
+
+      // Create notification for assigned user
+      await createNotification({
+        type: 'workflow_assignment',
+        title: 'Workflow Assigned',
+        message: `You have been assigned to workflow: ${workflow.title}`,
+        userId: userId,
+        category: 'task',
+        priority: workflow.priority === 'critical' || workflow.priority === 'high' ? 'high' : 'medium',
+        metadata: {
+          workflowId: workflow.id,
+          workflowTitle: workflow.title,
+          assignedBy: req.user.username
+        },
+        actionUrl: `/workflows/${workflow.id}`
+      })
+
+      await logAudit({
+        action: 'WORKFLOW_ASSIGN',
+        userId: req.user?.sub,
+        username: req.user?.username,
+        details: `Assigned workflow ${workflow.id} to ${user.full_name}`
+      })
+
+      return res.json({ workflow: updatedWorkflow })
+    }
+
+    const db = await loadDb()
+    const index = db.workflows.findIndex(w => w.id === req.params.id)
+    if (index === -1) return res.status(404).json({ error: 'Workflow not found' })
+
+    const user = (db.users || []).find(u => u.id === userId)
+    if (!user) return res.status(404).json({ error: 'User not found' })
+
+    db.workflows[index].assignedTo = userId
+    db.workflows[index].updatedAt = new Date().toISOString()
+    await saveDb(db)
+
+    await logAudit({
+      action: 'WORKFLOW_ASSIGN',
+      userId: req.user?.sub,
+      username: req.user?.username,
+      details: `Assigned workflow ${db.workflows[index].id} to ${user.fullName || user.username}`
+    })
+
+    res.json({ workflow: db.workflows[index] })
   } catch (err) {
     next(err)
   }

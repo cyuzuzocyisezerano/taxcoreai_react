@@ -2,8 +2,8 @@
   min-height: 100vh;
   display: grid;
   grid-template-columns: 280px 1fr;
-  gap: 24px;
-  padding: 24px;
+  gap: 0;
+  padding: 0;
   background: #eef4fb;
 }
 
@@ -15,9 +15,10 @@
   color: white;
   border-radius: var(--radius-xl);
   padding: 28px 20px;
-  min-height: calc(100vh - 48px);
+  min-height: 100vh;
   position: sticky;
-  top: 24px;
+  top: 0;
+  box-sizing: border-box;
 }
 
 .admin-dashboard__brand {
@@ -101,6 +102,10 @@
 
 .admin-dashboard__main {
   display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px;
+  overflow-x: hidden;
 }
 
 /* Modal now uses Tailwind utilities in components */
@@ -714,6 +719,12 @@
     position: relative;
     min-height: auto;
     top: 0;
+    border-radius: var(--radius-xl);
+    margin-bottom: 24px;
+  }
+
+  .admin-dashboard__main {
+    padding: 0 24px 24px;
   }
 
   .admin-dashboard__hero-card {

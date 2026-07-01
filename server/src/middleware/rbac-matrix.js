@@ -85,7 +85,7 @@ export const rolePermissions = {
     canEditSettings: false,
   },
   Supervisor: {
-    // Supervisor mode: view workflows + pending items + approve workflows, but still keep user/audit log management restricted
+    // Supervisor mode: full workflow management including creation, approval, and user assignment
     canViewDashboard: true,
     canViewTaxpayers: true,
     canAddTaxpayers: false,
@@ -97,19 +97,19 @@ export const rolePermissions = {
     canDeleteDocuments: false,
     canApproveDocuments: true,
     canViewWorkflows: true,
-    canCreateWorkflows: false,
-    canEditWorkflows: false,
+    canCreateWorkflows: true,
+    canEditWorkflows: true,
     canApproveWorkflows: true,
     canViewReports: true,
     canGenerateReports: false,
-    canViewUsers: false,
+    canViewUsers: true,
     canAddUsers: false,
     canEditUsers: false,
     canDeleteUsers: false,
     // NOTE: supervisor dashboard does not fetch audit logs directly
     canViewAuditLogs: false,
     canViewNotifications: true,
-    canManageNotifications: false,
+    canManageNotifications: true,
     canViewSettings: false,
     canEditSettings: false,
   },
