@@ -19,7 +19,6 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Workflows', to: '/workflows', permission: 'canViewWorkflows' },
   { label: 'Notifications', to: '/notifications' },
   { label: 'Reports & Analytics', to: '/reports-analytics', permission: 'canViewReports' },
-  { label: 'Integrations', to: '/integrations', permission: 'canViewSettings' },
   { label: 'Monitoring', to: '/monitoring', permission: 'canViewSettings' },
   { label: 'AI Assistant', to: '/ai-assistant', permission: 'canViewDocuments' },
   { label: 'Audit Logs', to: '/audit-logs', permission: 'canViewAuditLogs' },
