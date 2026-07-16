@@ -520,7 +520,7 @@ export function Workflows() {
                             </span>
                           </td>
                           <td>{workflow.currentStage}</td>
-                          <td>{workflow.assignedTo || 'Unassigned'}</td>
+                          <td>{workflow.assignedUsername || workflow.assignedTo || 'Unassigned'}</td>
                           <td style={isOverdue(workflow) ? { color: '#dc2626', fontWeight: 600 } : undefined}>
                             {workflow.dueDate ? new Date(workflow.dueDate).toLocaleDateString() : 'No due date'}
                             {isOverdue(workflow) && ' (Overdue)'}
@@ -910,7 +910,7 @@ export function Workflows() {
                   <strong>Current Stage:</strong> {selectedWorkflow.currentStage}
                 </div>
                 <div>
-                  <strong>Assigned To:</strong> {selectedWorkflow.assignedTo || 'Unassigned'}
+                  <strong>Assigned To:</strong> {selectedWorkflow.assignedUsername || selectedWorkflow.assignedTo || 'Unassigned'}
                 </div>
                 <div>
                   <strong>Due Date:</strong> {selectedWorkflow.dueDate ? new Date(selectedWorkflow.dueDate).toLocaleDateString() : 'No due date'}

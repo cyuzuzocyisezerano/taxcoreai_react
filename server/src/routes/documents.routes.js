@@ -857,14 +857,23 @@ router.get('/export', authenticate, authorize({ permission: 'canViewDocuments' }
 router.get('/:id/file', authenticate, authorize({ permission: 'canViewDocuments' }), async (req, res, next) => {
   try {
     const { id } = req.params
-    const db = await loadDb()
-    const doc = db.documents.find((d) => d.id === id)
-    if (!doc) return res.status(404).json({ error: 'Document not found' })
+    let fileName = null
 
-    if (!doc.fileName) return res.status(404).json({ error: 'No file available for this document' })
+    if (usePg) {
+      const result = await pool.query('SELECT id, file_name FROM documents WHERE id = $1 LIMIT 1', [id])
+      if (!result.rows.length) return res.status(404).json({ error: 'Document not found' })
+      fileName = result.rows[0].file_name
+    } else {
+      const db = await loadDb()
+      const doc = db.documents.find((d) => d.id === id)
+      if (!doc) return res.status(404).json({ error: 'Document not found' })
+      fileName = doc.fileName
+    }
+
+    if (!fileName) return res.status(404).json({ error: 'No file available for this document' })
 
     // Resolve file in server/files (two levels up from src/routes)
-    const fileUrl = new URL(`../../files/${doc.fileName}`, import.meta.url)
+    const fileUrl = new URL(`../../files/${fileName}`, import.meta.url)
     const filePath = fileURLToPath(fileUrl)
     if (!path.isAbsolute(filePath)) return res.status(500).json({ error: 'Invalid file path' })
     return res.sendFile(filePath, (err) => {

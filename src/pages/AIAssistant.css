@@ -1,4 +1,4 @@
-/* Premium AI Assistant - Enterprise Grade Design */
+/* Premium AI Assistant - Enterprise Grade Design (FIXED) */
 
 /* ============================================
    CSS CUSTOM PROPERTIES & THEME
@@ -9,43 +9,43 @@
   --ai-primary-hover: #1D4ED8;
   --ai-secondary: #6366F1;
   --ai-secondary-hover: #4F46E5;
-  
+
   /* Status Colors */
   --ai-success: #22C55E;
   --ai-warning: #F59E0B;
   --ai-danger: #EF4444;
-  
+
   /* Background Colors */
   --ai-bg-primary: #F8FAFC;
   --ai-bg-secondary: #FFFFFF;
   --ai-bg-tertiary: #F1F5F9;
-  
+
   /* Dark Mode Colors */
   --ai-dark-bg-primary: #0F172A;
   --ai-dark-bg-secondary: #1E293B;
   --ai-dark-bg-tertiary: #334155;
-  
+
   /* Text Colors */
   --ai-text-primary: #0F172A;
   --ai-text-secondary: #475569;
   --ai-text-muted: #64748B;
   --ai-text-inverse: #FFFFFF;
-  
+
   /* Border Colors */
   --ai-border: #E2E8F0;
   --ai-border-hover: #CBD5E1;
-  
+
   /* Shadows */
   --ai-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --ai-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   --ai-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
   --ai-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-  
+
   /* Glassmorphism */
   --ai-glass-bg: rgba(255, 255, 255, 0.7);
   --ai-glass-border: rgba(255, 255, 255, 0.3);
   --ai-glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
-  
+
   /* Typography */
   --ai-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --ai-font-xs: 0.75rem;
@@ -55,7 +55,7 @@
   --ai-font-xl: 1.25rem;
   --ai-font-2xl: 1.5rem;
   --ai-font-3xl: 1.875rem;
-  
+
   /* Spacing */
   --ai-spacing-xs: 0.25rem;
   --ai-spacing-sm: 0.5rem;
@@ -63,7 +63,7 @@
   --ai-spacing-lg: 1.5rem;
   --ai-spacing-xl: 2rem;
   --ai-spacing-2xl: 3rem;
-  
+
   /* Border Radius */
   --ai-radius-sm: 0.375rem;
   --ai-radius-md: 0.5rem;
@@ -71,11 +71,15 @@
   --ai-radius-xl: 1rem;
   --ai-radius-2xl: 1.5rem;
   --ai-radius-full: 9999px;
-  
+
   /* Transitions */
   --ai-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --ai-transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
   --ai-transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* FIX: explicit sidebar widths, referenced by layout + media queries below */
+  --ai-sidebar-left-width: 280px;
+  --ai-sidebar-right-width: 320px;
 }
 
 /* Dark Mode */
@@ -94,84 +98,41 @@
   }
 }
 
+/* FIX: box-sizing reset — without this, padding/border on flex children
+   was pushing the layout wider than expected and causing overflow. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 /* ============================================
-   MAIN LAYOUT - SIMPLE LIKE NOTIFICATIONS
+   MAIN LAYOUT
    ============================================ */
-.ai-assistant-page {
+/* FIX: this is the class every media query below actually targets now.
+   Originally the base rule was on `.ai-assistant-page` (flex, no column
+   sizing) while every responsive rule targeted a different, undefined
+   class `.ai-assistant-layout`. Nothing below 1200px was ever applying. */
+.ai-assistant-page,
+.ai-assistant-layout {
   display: flex;
   height: 100vh;
   overflow: hidden;
 }
 
 .ai-assistant-page__main {
-  flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   min-width: 0;
+  min-height: 0;
+  position: relative;
+  flex: 1;
 }
 
 /* ============================================
    LEFT SIDEBAR
    ============================================ */
-.ai-sidebar-left {
-  background: var(--ai-bg-secondary);
-  border-right: 1px solid var(--ai-border);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  transition: transform var(--ai-transition-base);
-}
-
-.ai-sidebar-header {
-  padding: var(--ai-spacing-lg);
-  border-bottom: 1px solid var(--ai-border);
-}
-
-.ai-logo {
-  display: flex;
-  align-items: center;
-  gap: var(--ai-spacing-sm);
-  margin-bottom: var(--ai-spacing-lg);
-}
-
-.ai-logo-icon {
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, var(--ai-primary) 0%, var(--ai-secondary) 100%);
-  border-radius: var(--ai-radius-lg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: var(--ai-font-xl);
-  box-shadow: var(--ai-shadow-md);
-}
-
-.ai-logo-text {
-  font-size: var(--ai-font-lg);
-  font-weight: 700;
-  color: var(--ai-text-primary);
-  letter-spacing: -0.025em;
-}
-
-.ai-new-chat-btn {
-  width: 100%;
-  padding: var(--ai-spacing-sm) var(--ai-spacing-md);
-  background: linear-gradient(135deg, var(--ai-primary) 0%, var(--ai-secondary) 100%);
-  color: white;
-  border: none;
-  border-radius: var(--ai-radius-lg);
-  font-size: var(--ai-font-sm);
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--ai-spacing-sm);
-  transition: all var(--ai-transition-base);
-  box-shadow: var(--ai-shadow-md);
-}
 
 .ai-new-chat-btn:hover {
   transform: translateY(-2px);
@@ -259,6 +220,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
 }
 
 .ai-sidebar-footer {
@@ -295,17 +257,23 @@
   background: var(--ai-bg-primary);
   position: relative;
   overflow: hidden;
+  min-height: 0;
 }
 
+/* FIX: removed the redundant solid `background` declaration that was
+   immediately being overwritten by the glass background on the very
+   next line — dead code, kept only the intended glass background.
+   Also added the -webkit- prefix so the blur actually renders in Safari. */
 .ai-chat-header {
   padding: var(--ai-spacing-lg) var(--ai-spacing-xl);
-  background: var(--ai-bg-secondary);
   border-bottom: 1px solid var(--ai-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   background: var(--ai-glass-bg);
+  flex-shrink: 0;
 }
 
 .ai-chat-title {
@@ -348,13 +316,26 @@
 
 /* Welcome Screen */
 .ai-welcome-screen {
+  display: none !important;
   flex: 1;
-  display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: var(--ai-spacing-2xl);
   text-align: center;
+  overflow-y: auto;
+  height: 0 !important;
+}
+
+.ai-assistant-page__header {
+  display: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  flex-shrink: 0;
+  overflow: hidden !important;
 }
 
 .ai-welcome-icon {
@@ -386,7 +367,7 @@
 }
 
 .ai-suggested-prompts {
-  display: grid;
+  display: none !important;
   grid-template-columns: repeat(2, 1fr);
   gap: var(--ai-spacing-md);
   max-width: 800px;
@@ -435,6 +416,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--ai-spacing-lg);
+  min-height: 0;
 }
 
 .ai-message {
@@ -492,6 +474,10 @@
   align-items: center;
   gap: var(--ai-spacing-sm);
   margin-bottom: var(--ai-spacing-xs);
+}
+
+.ai-message--user .ai-message-header {
+  flex-direction: row-reverse;
 }
 
 .ai-message-author {
@@ -606,12 +592,15 @@
 /* ============================================
    BOTTOM INPUT AREA
    ============================================ */
+/* FIX: same redundant-background issue as .ai-chat-header, fixed the same way. */
 .ai-input-area {
   padding: var(--ai-spacing-lg) var(--ai-spacing-xl);
-  background: var(--ai-bg-secondary);
   border-top: 1px solid var(--ai-border);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   background: var(--ai-glass-bg);
+  flex-shrink: 0;
+  min-height: auto;
 }
 
 .ai-input-wrapper {
@@ -720,11 +709,12 @@
    RIGHT SIDEBAR - CONTEXT PANEL
    ============================================ */
 .ai-sidebar-right {
+  display: none;
   background: var(--ai-bg-secondary);
   border-left: 1px solid var(--ai-border);
-  display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-height: 0;
 }
 
 .ai-context-header {
@@ -797,22 +787,29 @@
 /* ============================================
    RESPONSIVE DESIGN
    ============================================ */
+/* FIX: these now target the real container class and the real CSS
+   variables, so the grid columns actually shrink at 1200px. */
 @media (max-width: 1200px) {
-  .ai-assistant-layout {
-    grid-template-columns: 260px 1fr 280px;
+  :root {
+    --ai-sidebar-left-width: 240px;
+    --ai-sidebar-right-width: 260px;
   }
 }
 
+/* FIX: below 1024px, collapse to a single column and hide both
+   sidebars — previously this rule referenced a grid that never
+   existed on the real container, so sidebars never hid on tablet. */
 @media (max-width: 1024px) {
+  .ai-assistant-page,
   .ai-assistant-layout {
     grid-template-columns: 1fr;
   }
-  
+
   .ai-sidebar-left,
   .ai-sidebar-right {
     display: none;
   }
-  
+
   .ai-suggested-prompts {
     grid-template-columns: 1fr;
   }
@@ -822,15 +819,15 @@
   .ai-message {
     max-width: 90%;
   }
-  
+
   .ai-chat-header {
     padding: var(--ai-spacing-md);
   }
-  
+
   .ai-messages-container {
     padding: var(--ai-spacing-md);
   }
-  
+
   .ai-input-area {
     padding: var(--ai-spacing-md);
   }

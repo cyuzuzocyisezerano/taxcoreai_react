@@ -247,6 +247,7 @@ export interface WorkflowItem {
   taxpayerTin?: string
   taxpayerName?: string
   assignedTo?: string
+  assignedUsername?: string
   status: string
   priority: string
   dueDate?: string
@@ -483,7 +484,7 @@ export const api = {
 
   getAuditLogs(limit = 50) {
     return request<{
-      logs: { id: string; action: string; username: string; details: string; createdAt: string }[]
+      logs: { id: string; action: string; username: string; userFullName: string; details: string; createdAt: string }[]
       total: number
     }>(`/audit-logs?limit=${limit}`)
   },
@@ -713,7 +714,7 @@ export const api = {
     workflowTemplate?: any
     workflowIds?: string[]
   }) {
-    return request<{ batch: WorkflowBatch }>('/workflows/batch', {
+    return request<{ batch: WorkflowBatch }>('/workflows/batches', {
       method: 'POST',
       body: JSON.stringify(data),
     })

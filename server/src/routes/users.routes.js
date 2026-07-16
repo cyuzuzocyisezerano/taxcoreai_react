@@ -50,10 +50,10 @@ router.post('/', authenticate, authorize({ permission: 'canAddUsers' }), async (
       const passwordHash = await bcrypt.hash(password, 10)
       const id = `user-${Date.now()}`
       const result = await pool.query(
-        `INSERT INTO users (id, username, email, full_name, password_hash, role, title, is_active, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        `INSERT INTO users (id, username, email, full_name, password_hash, role, is_active, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
          RETURNING id, username, full_name AS "fullName", role, email, is_active AS "isActive"`,
-        [id, username.trim(), email?.trim() || null, fullName.trim(), passwordHash, role, role, true],
+        [id, username.trim(), email?.trim() || null, fullName.trim(), passwordHash, role, true],
       )
 
       return res.status(201).json(result.rows[0])

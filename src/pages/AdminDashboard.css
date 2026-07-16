@@ -15,10 +15,12 @@
   color: white;
   border-radius: var(--radius-xl);
   padding: 28px 20px;
-  min-height: 100vh;
+  max-height: 100vh;
   position: sticky;
   top: 0;
   box-sizing: border-box;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .admin-dashboard__brand {
@@ -717,10 +719,12 @@
 
   .admin-dashboard__sidebar {
     position: relative;
+    max-height: none;
     min-height: auto;
     top: 0;
     border-radius: var(--radius-xl);
     margin-bottom: 24px;
+    overflow-y: auto;
   }
 
   .admin-dashboard__main {

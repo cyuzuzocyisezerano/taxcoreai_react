@@ -3,12 +3,14 @@ import { pool } from '../db.js'
 
 const usePg = Boolean(process.env.DATABASE_URL)
 
-export async function logAudit({ action, userId, username, details, ipAddress, userAgent }) {
+export async function logAudit({ action, userId, username, userFullName, approvalStatus, details, ipAddress, userAgent }) {
   const entry = {
     id: `log-${Date.now()}`,
     action,
     userId,
     username,
+    userFullName,
+    approvalStatus,
     details,
     ipAddress,
     userAgent,
@@ -18,9 +20,9 @@ export async function logAudit({ action, userId, username, details, ipAddress, u
   if (usePg) {
     try {
       await pool.query(
-        `INSERT INTO audit_logs (id, action, user_id, username, details, ip_address, user_agent, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [entry.id, entry.action, entry.userId, entry.username, entry.details, entry.ipAddress, entry.userAgent, entry.createdAt]
+        `INSERT INTO audit_logs (id, action, user_id, username, user_full_name, approval_status, details, ip_address, user_agent, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+        [entry.id, entry.action, entry.userId, entry.username, entry.userFullName, entry.approvalStatus, entry.details, entry.ipAddress, entry.userAgent, entry.createdAt]
       )
     } catch (err) {
       console.error('Failed to write audit log to PostgreSQL:', err)

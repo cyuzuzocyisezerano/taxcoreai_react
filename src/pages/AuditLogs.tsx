@@ -8,6 +8,7 @@ interface AuditEntry {
   id: string
   action: string
   username: string
+  userFullName: string
   details: string
   createdAt: string
 }
@@ -92,6 +93,7 @@ export function AuditLogs() {
                   <tr>
                     <th>Time</th>
                     <th>User</th>
+                    <th>Full Name</th>
                     <th>Action</th>
                     <th>Details</th>
                   </tr>
@@ -99,7 +101,7 @@ export function AuditLogs() {
                 <tbody>
                   {logs.length === 0 ? (
                     <tr>
-                      <td colSpan={4} style={{ textAlign: 'center', padding: '2rem' }}>
+                      <td colSpan={5} style={{ textAlign: 'center', padding: '2rem' }}>
                         No audit logs found
                       </td>
                     </tr>
@@ -108,6 +110,7 @@ export function AuditLogs() {
                       <tr key={log.id}>
                         <td>{new Date(log.createdAt).toLocaleString()}</td>
                         <td>{log.username}</td>
+                        <td>{log.userFullName || '—'}</td>
                         <td>{log.action}</td>
                         <td>{log.details}</td>
                       </tr>

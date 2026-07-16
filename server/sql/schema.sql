@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS users (
   full_name VARCHAR(255) NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
   role VARCHAR(50) NOT NULL CHECK (role IN ('Admin', 'Officer', 'Auditor', 'Supervisor')),
+  title VARCHAR(255),
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -65,6 +66,8 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   action VARCHAR(100) NOT NULL,
   user_id VARCHAR(255),
   username VARCHAR(100),
+  user_full_name VARCHAR(255),
+  approval_status VARCHAR(50),
   details TEXT,
   ip_address VARCHAR(50),
   user_agent TEXT,

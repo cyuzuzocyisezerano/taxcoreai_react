@@ -67,13 +67,19 @@ router.get('/', authenticate, authorize({ permission: 'canViewWorkflows' }), asy
       }
 
       const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : ''
-      const sql = `SELECT * FROM workflows ${whereClause} ORDER BY 
-        CASE priority WHEN 'critical' THEN 1 WHEN 'high' THEN 2 WHEN 'medium' THEN 3 WHEN 'low' THEN 4 END,
-        due_date ASC NULLS LAST,
-        created_at DESC
+      const sql = `SELECT w.*, u.username as assigned_username FROM workflows w 
+        LEFT JOIN users u ON w.assigned_to = u.id
+        ${whereClause} ORDER BY 
+        CASE w.priority WHEN 'critical' THEN 1 WHEN 'high' THEN 2 WHEN 'medium' THEN 3 WHEN 'low' THEN 4 END,
+        w.due_date ASC NULLS LAST,
+        w.created_at DESC
         LIMIT 100`
       const result = await pool.query(sql, params)
-      const workflows = result.rows.map(transformWorkflowRow)
+      const workflows = result.rows.map(row => {
+        const workflow = transformWorkflowRow(row)
+        workflow.assignedUsername = row.assigned_username
+        return workflow
+      })
       return res.json({ workflows, total: workflows.length })
     }
 
@@ -114,9 +120,14 @@ router.get('/', authenticate, authorize({ permission: 'canViewWorkflows' }), asy
 router.get('/:id', authenticate, authorize({ permission: 'canViewWorkflows' }), async (req, res, next) => {
   try {
     if (usePg) {
-      const result = await pool.query('SELECT * FROM workflows WHERE id = $1 LIMIT 1', [req.params.id])
+      const result = await pool.query(
+        'SELECT w.*, u.username as assigned_username FROM workflows w LEFT JOIN users u ON w.assigned_to = u.id WHERE w.id = $1 LIMIT 1', 
+        [req.params.id]
+      )
       if (!result.rows.length) return res.status(404).json({ error: 'Workflow not found' })
-      return res.json({ workflow: transformWorkflowRow(result.rows[0]) })
+      const workflow = transformWorkflowRow(result.rows[0])
+      workflow.assignedUsername = result.rows[0].assigned_username
+      return res.json({ workflow })
     }
 
     const db = await loadDb()
@@ -995,7 +1006,7 @@ router.get('/analytics/overview', authenticate, authorize({ permission: 'canView
 })
 
 // Batch processing endpoints
-router.post('/batch', authenticate, authorize({ permission: 'canCreateWorkflows' }), async (req, res, next) => {
+router.post('/batches', authenticate, authorize({ permission: 'canCreateWorkflows' }), async (req, res, next) => {
   try {
     const { name, description, filters, workflowTemplate, workflowIds } = req.body
 

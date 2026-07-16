@@ -27,23 +27,28 @@ router.post('/login', async (req, res, next) => {
     const { username, password } = req.body
 
     if (!username?.trim() || !password) {
-      return res.status(400).json({ error: 'Username and password are required' })
+      return res.status(400).json({ error: 'Username/email and password are required' })
     }
 
     let user
+    const loginTerm = username.trim().toLowerCase()
     if (usePg) {
       const result = await pool.query(
-        'SELECT * FROM users WHERE LOWER(username) = LOWER($1) LIMIT 1',
-        [username.trim()]
+        'SELECT * FROM users WHERE LOWER(username) = $1 OR LOWER(email) = $1 OR LOWER(full_name) = $1 LIMIT 1',
+        [loginTerm]
       )
       user = result.rows[0]
     } else {
       const db = await loadDb()
-      user = db.users.find((u) => u.username.toLowerCase() === username.trim().toLowerCase())
+      user = db.users.find((u) => 
+        u.username.toLowerCase() === loginTerm ||
+        (u.email && u.email.toLowerCase() === loginTerm) ||
+        (u.fullName && u.fullName.toLowerCase() === loginTerm)
+      )
     }
 
     if (!user) {
-      return res.status(401).json({ error: 'Invalid username or password' })
+      return res.status(401).json({ error: 'Invalid credentials' })
     }
 
     const valid = await bcrypt.compare(password, user.password_hash || user.passwordHash)

@@ -140,6 +140,8 @@ CREATE TABLE audit_logs (
   action VARCHAR(100) NOT NULL,
   user_id VARCHAR(255),
   username VARCHAR(100),
+  user_full_name VARCHAR(255),
+  approval_status VARCHAR(50),
   details TEXT,
   ip_address VARCHAR(50),
   user_agent TEXT,

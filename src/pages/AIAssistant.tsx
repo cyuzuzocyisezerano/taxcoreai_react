@@ -221,26 +221,13 @@ export function AIAssistant() {
         </header>
 
         {messages.length === 0 ? (
-          /* Welcome Screen */
-          <div className="ai-welcome-screen">
-            <div className="ai-welcome-icon">🤖</div>
-            <h2 className="ai-welcome-title">How can I help you today?</h2>
-            <p className="ai-welcome-subtitle">
-              I'm your AI assistant for tax management. Ask me anything about taxpayers, documents, compliance, and more.
-            </p>
-            <div className="ai-suggested-prompts">
-              {suggestedPrompts.map((prompt, index) => (
-                <div
-                  key={index}
-                  className="ai-suggested-prompt"
-                  onClick={() => handleSuggestedPrompt(prompt.query)}
-                >
-                  <div className="ai-suggested-prompt-icon">{prompt.icon}</div>
-                  <div className="ai-suggested-prompt-title">{prompt.title}</div>
-                  <div className="ai-suggested-prompt-desc">{prompt.desc}</div>
-                </div>
-              ))}
-            </div>
+          /* Messages Container - Even when empty */
+          <div
+            className="ai-messages-container"
+            ref={messagesContainerRef}
+            onScroll={handleScroll}
+          >
+            <div ref={messagesEndRef} />
           </div>
         ) : (
           /* Chat Messages */
