@@ -520,7 +520,7 @@ export function Workflows() {
                             </span>
                           </td>
                           <td>{workflow.currentStage}</td>
-                          <td>{workflow.assignedUsername || workflow.assignedTo || 'Unassigned'}</td>
+                          <td>{workflow.assignedFullName || workflow.assignedUsername || workflow.assignedTo || 'Unassigned'}</td>
                           <td style={isOverdue(workflow) ? { color: '#dc2626', fontWeight: 600 } : undefined}>
                             {workflow.dueDate ? new Date(workflow.dueDate).toLocaleDateString() : 'No due date'}
                             {isOverdue(workflow) && ' (Overdue)'}

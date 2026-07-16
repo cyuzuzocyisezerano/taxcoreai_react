@@ -4,6 +4,22 @@ import { pool } from '../db.js'
 const usePg = Boolean(process.env.DATABASE_URL)
 
 export async function logAudit({ action, userId, username, userFullName, approvalStatus, details, ipAddress, userAgent }) {
+  // try to populate missing userFullName from users table / file DB
+  if (!userFullName && userId) {
+    try {
+      if (usePg) {
+        const r = await pool.query('SELECT full_name FROM users WHERE id = $1 LIMIT 1', [userId])
+        if (r.rows && r.rows[0] && r.rows[0].full_name) userFullName = r.rows[0].full_name
+      } else {
+        const db = await loadDb()
+        const u = (db.users || []).find(x => x.id === userId || x.username === username)
+        if (u) userFullName = u.name || u.full_name || userFullName
+      }
+    } catch (err) {
+      // ignore lookup errors
+    }
+  }
+
   const entry = {
     id: `log-${Date.now()}`,
     action,

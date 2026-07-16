@@ -248,6 +248,7 @@ export interface WorkflowItem {
   taxpayerName?: string
   assignedTo?: string
   assignedUsername?: string
+  assignedFullName?: string
   status: string
   priority: string
   dueDate?: string
@@ -766,6 +767,13 @@ export const api = {
 
   getSettings() {
     return request<{ settings: SettingsData }>('/settings')
+  },
+
+  updateSettings(data: SettingsData) {
+    return request<{ settings: SettingsData }>('/settings', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
   },
 
   searchRecords(params?: { q?: string }) {

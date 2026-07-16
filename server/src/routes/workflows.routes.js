@@ -67,7 +67,7 @@ router.get('/', authenticate, authorize({ permission: 'canViewWorkflows' }), asy
       }
 
       const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : ''
-      const sql = `SELECT w.*, u.username as assigned_username FROM workflows w 
+      const sql = `SELECT w.*, u.username as assigned_username, u.full_name as assigned_full_name FROM workflows w 
         LEFT JOIN users u ON w.assigned_to = u.id
         ${whereClause} ORDER BY 
         CASE w.priority WHEN 'critical' THEN 1 WHEN 'high' THEN 2 WHEN 'medium' THEN 3 WHEN 'low' THEN 4 END,
@@ -78,6 +78,7 @@ router.get('/', authenticate, authorize({ permission: 'canViewWorkflows' }), asy
       const workflows = result.rows.map(row => {
         const workflow = transformWorkflowRow(row)
         workflow.assignedUsername = row.assigned_username
+        workflow.assignedFullName = row.assigned_full_name
         return workflow
       })
       return res.json({ workflows, total: workflows.length })
@@ -110,6 +111,17 @@ router.get('/', authenticate, authorize({ permission: 'canViewWorkflows' }), asy
       )
     }
 
+    // attach assignedUsername and assignedFullName from users in file DB
+    const users = db.users ?? []
+    workflows = workflows.map((w) => {
+      const assignedUser = users.find(u => u.id === w.assignedTo)
+      return {
+        ...w,
+        assignedUsername: assignedUser?.username,
+        assignedFullName: assignedUser?.name || assignedUser?.full_name || undefined,
+      }
+    })
+
     res.json({ workflows, total: workflows.length })
   } catch (err) {
     next(err)
@@ -121,12 +133,13 @@ router.get('/:id', authenticate, authorize({ permission: 'canViewWorkflows' }), 
   try {
     if (usePg) {
       const result = await pool.query(
-        'SELECT w.*, u.username as assigned_username FROM workflows w LEFT JOIN users u ON w.assigned_to = u.id WHERE w.id = $1 LIMIT 1', 
+        'SELECT w.*, u.username as assigned_username, u.full_name as assigned_full_name FROM workflows w LEFT JOIN users u ON w.assigned_to = u.id WHERE w.id = $1 LIMIT 1', 
         [req.params.id]
       )
       if (!result.rows.length) return res.status(404).json({ error: 'Workflow not found' })
       const workflow = transformWorkflowRow(result.rows[0])
       workflow.assignedUsername = result.rows[0].assigned_username
+      workflow.assignedFullName = result.rows[0].assigned_full_name
       return res.json({ workflow })
     }
 

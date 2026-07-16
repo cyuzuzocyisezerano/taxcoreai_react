@@ -4,6 +4,7 @@ import { loadDb, saveDb } from '../data/store.js'
 import { pool } from '../db.js'
 import { authenticate } from '../middleware/auth.js'
 import { authorize } from '../middleware/authorize.js'
+import { logAudit } from '../services/audit.service.js'
 
 const router = Router()
 
@@ -50,11 +51,53 @@ router.post('/', authenticate, authorize({ permission: 'canAddUsers' }), async (
       const passwordHash = await bcrypt.hash(password, 10)
       const id = `user-${Date.now()}`
       const result = await pool.query(
-        `INSERT INTO users (id, username, email, full_name, password_hash, role, is_active, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-         RETURNING id, username, full_name AS "fullName", role, email, is_active AS "isActive"`,
-        [id, username.trim(), email?.trim() || null, fullName.trim(), passwordHash, role, true],
-      )
+  `INSERT INTO users (
+      id,
+      username,
+      email,
+      name,
+      full_name,
+      password_hash,
+      role,
+      is_active,
+      created_at,
+      updated_at
+   )
+   VALUES (
+      $1, $2, $3, $4, $5, $6, $7, $8,
+      CURRENT_TIMESTAMP,
+      CURRENT_TIMESTAMP
+   )
+   RETURNING
+      id,
+      username,
+      full_name AS "fullName",
+      role,
+      email,
+      is_active AS "isActive"`,
+  [
+    id,
+    username.trim(),
+    email?.trim() || null,
+    fullName.trim(),   // name
+    fullName.trim(),   // full_name
+    passwordHash,
+    role,
+    true
+  ]
+);
+
+      // log audit entry for user creation
+      try {
+        await logAudit({
+          action: 'USER_CREATE',
+          userId: req.user?.sub,
+          username: req.user?.username,
+          details: `Created user ${username.trim()}`,
+        })
+      } catch (e) {
+        // ignore audit failures
+      }
 
       return res.status(201).json(result.rows[0])
     }
@@ -78,6 +121,18 @@ router.post('/', authenticate, authorize({ permission: 'canAddUsers' }), async (
 
     db.users.push(newUser)
     await saveDb(db)
+
+    // write audit log for file-based DB
+    try {
+      await logAudit({
+        action: 'USER_CREATE',
+        userId: req.user?.sub,
+        username: req.user?.username,
+        details: `Created user ${newUser.username}`,
+      })
+    } catch (e) {
+      // ignore audit failures
+    }
 
     return res.status(201).json({
       id: newUser.id,

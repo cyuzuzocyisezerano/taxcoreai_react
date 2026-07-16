@@ -1,181 +1,156 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { AdminSidebar } from '../components/AdminSidebar'
+import { useAuth } from '../context/AuthContext'
+import { api, type SettingsData } from '../lib/api'
 import './SettingsPage.css'
 
 export function SettingsPage() {
-  const [activeTab, setActiveTab] = useState('Edit Profile')
-  
-  const [formData, setFormData] = useState({
-    firstName1: 'Yoshikage',
-    firstName2: 'Kira',
-    email: 'YoshikageKira@gmail.com',
-    phone: '+84 789 373 568',
-    country: 'Vietnam',
-    city: 'Hai Phong',
-    address: 'Hong Bang',
-    zipCode: '180000'
-  })
+  const { user } = useAuth()
+  const [settings, setSettings] = useState<SettingsData>({})
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        setLoading(true)
+        const response = await api.getSettings()
+        setSettings(response.settings)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unable to load settings')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadSettings()
+  }, [])
+
+  const handleChange = (field: keyof SettingsData, value: number | boolean) => {
+    setSettings((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
   }
 
-  const handleSave = () => {
-    console.log('Saving settings:', formData)
-    // Add your save logic here
+  const handleFeatureFlagChange = (flag: keyof NonNullable<SettingsData['featureFlags']>, value: boolean) => {
+    setSettings((prev) => ({
+      ...prev,
+      featureFlags: {
+        ...(prev.featureFlags ?? {}),
+        [flag]: value,
+      },
+    }))
   }
 
-  const tabs = ['Edit Profile', 'Preferences', 'Security', 'Data Privacy']
+  const handleSave = async () => {
+    setSaving(true)
+    setError(null)
+    setSuccess(null)
+
+    try {
+      const response = await api.updateSettings(settings)
+      setSettings(response.settings)
+      setSuccess('Settings saved successfully.')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to save settings')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   return (
-    <div className="settings-page">
-      <div className="settings-container">
-        <h1 className="settings-title">Setting</h1>
-        
-        <div className="settings-tabs">
-          {tabs.map(tab => (
-            <button
-              key={tab}
-              className={`settings-tab ${activeTab === tab ? 'settings-tab--active' : ''}`}
-              onClick={() => setActiveTab(tab)}
-            >
-              {tab}
+    <div className="admin-dashboard settings-page">
+      <AdminSidebar role={user?.role ?? 'Officer'} title={user?.title ?? 'Taxpayer Officer'} />
+
+      <main className="admin-dashboard__main">
+        <header className="admin-dashboard__topbar">
+          <div>
+            <p className="admin-dashboard__breadcrumb">Settings</p>
+            <h1>Settings</h1>
+            <p className="admin-dashboard__hero-text">Configure system defaults and feature flags for the application.</p>
+          </div>
+          <div className="admin-dashboard__topbar-actions">
+            <button type="button" className="btn btn-primary" onClick={handleSave} disabled={saving || loading}>
+              {saving ? 'Saving...' : 'Save settings'}
             </button>
-          ))}
-        </div>
+          </div>
+        </header>
 
-        <div className="settings-content">
-          {activeTab === 'Edit Profile' && (
-            <>
-              <div className="profile-section">
-                <div className="profile-avatar">
-                  <img src="https://i.pravatar.cc/150?img=5" alt="Profile" />
-                  <div className="avatar-badge">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                      <circle cx="12" cy="13" r="4" />
-                    </svg>
-                  </div>
+        <section className="admin-dashboard__content-card settings-card">
+          {error && <div className="settings-message settings-error">{error}</div>}
+          {success && <div className="settings-message settings-success">{success}</div>}
+          {loading ? (
+            <p>Loading settings…</p>
+          ) : (
+            <div className="settings-form">
+              <div className="settings-row">
+                <div>
+                  <label className="settings-label" htmlFor="defaultTaxYear">
+                    Default tax year
+                  </label>
+                  <p className="settings-description">The default tax year used when creating new filings or workflows.</p>
                 </div>
-
-                <div className="form-grid">
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label className="form-label">First Name</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={formData.firstName1}
-                        onChange={(e) => handleInputChange('firstName1', e.target.value)}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">First Name</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={formData.firstName2}
-                        onChange={(e) => handleInputChange('firstName2', e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Email Address</label>
-                    <input
-                      type="email"
-                      className="form-input"
-                      value={formData.email}
-                      onChange={(e) => handleInputChange('email', e.target.value)}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Phone Number</label>
-                    <input
-                      type="tel"
-                      className="form-input"
-                      value={formData.phone}
-                      onChange={(e) => handleInputChange('phone', e.target.value)}
-                    />
-                  </div>
-                </div>
+                <input
+                  id="defaultTaxYear"
+                  type="number"
+                  className="settings-input"
+                  value={settings.defaultTaxYear ?? ''}
+                  onChange={(e) => handleChange('defaultTaxYear', e.target.value ? Number(e.target.value) : 0)}
+                />
               </div>
 
-              <div className="address-section">
-                <h2 className="section-title">Personal Address</h2>
-                
-                <div className="form-grid">
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label className="form-label">Country</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={formData.country}
-                        onChange={(e) => handleInputChange('country', e.target.value)}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">City</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={formData.city}
-                        onChange={(e) => handleInputChange('city', e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label className="form-label">Address</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={formData.address}
-                        onChange={(e) => handleInputChange('address', e.target.value)}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Zip Code</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={formData.zipCode}
-                        onChange={(e) => handleInputChange('zipCode', e.target.value)}
-                      />
-                    </div>
-                  </div>
+              <div className="settings-row">
+                <div>
+                  <label className="settings-label" htmlFor="reportingWindowDays">
+                    Reporting window (days)
+                  </label>
+                  <p className="settings-description">The number of days used for default reporting windows.</p>
                 </div>
+                <input
+                  id="reportingWindowDays"
+                  type="number"
+                  className="settings-input"
+                  value={settings.reportingWindowDays ?? ''}
+                  onChange={(e) => handleChange('reportingWindowDays', e.target.value ? Number(e.target.value) : 0)}
+                />
               </div>
-            </>
-          )}
 
-          {activeTab === 'Preferences' && (
-            <div className="placeholder-content">
-              <p>Preferences settings coming soon...</p>
+              <div className="settings-row checkbox-row">
+                <div>
+                  <label className="settings-label" htmlFor="allowRegistration">
+                    Allow registration
+                  </label>
+                  <p className="settings-description">Enable new user registration on the platform.</p>
+                </div>
+                <input
+                  id="allowRegistration"
+                  type="checkbox"
+                  checked={settings.featureFlags?.allowRegistration ?? false}
+                  onChange={(e) => handleFeatureFlagChange('allowRegistration', e.target.checked)}
+                />
+              </div>
+
+              <div className="settings-row checkbox-row">
+                <div>
+                  <label className="settings-label" htmlFor="enableNotifications">
+                    Enable notifications
+                  </label>
+                  <p className="settings-description">Allow system notification alerts for workflows and updates.</p>
+                </div>
+                <input
+                  id="enableNotifications"
+                  type="checkbox"
+                  checked={settings.featureFlags?.enableNotifications ?? false}
+                  onChange={(e) => handleFeatureFlagChange('enableNotifications', e.target.checked)}
+                />
+              </div>
             </div>
           )}
-
-          {activeTab === 'Security' && (
-            <div className="placeholder-content">
-              <p>Security settings coming soon...</p>
-            </div>
-          )}
-
-          {activeTab === 'Data Privacy' && (
-            <div className="placeholder-content">
-              <p>Data Privacy settings coming soon...</p>
-            </div>
-          )}
-        </div>
-
-        <div className="settings-actions">
-          <button className="save-button" onClick={handleSave}>
-            Save Changes
-          </button>
-        </div>
-      </div>
+        </section>
+      </main>
     </div>
   )
 }

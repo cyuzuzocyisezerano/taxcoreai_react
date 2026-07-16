@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { loadDb } from '../data/store.js'
+import { loadDb, saveDb } from '../data/store.js'
 import { pool } from '../db.js'
 import { authenticate } from '../middleware/auth.js'
 import { authorize } from '../middleware/authorize.js'
@@ -40,10 +40,10 @@ router.get('/', authorize({ permission: 'canViewAuditLogs' }), async (req, res, 
       const limitVal = Math.min(Number(limit) || 50, 100)
       
       const result = await pool.query(
-        `SELECT * FROM audit_logs ${whereClause} ORDER BY created_at DESC LIMIT $${params.length + 1}`,
+        `SELECT al.*, COALESCE(al.user_full_name, u.full_name) AS user_full_name FROM audit_logs al LEFT JOIN users u ON al.user_id = u.id ${whereClause} ORDER BY created_at DESC LIMIT $${params.length + 1}`,
         [...params, limitVal]
       )
-      
+
       const logs = result.rows.map(row => ({
         id: row.id,
         action: row.action,
@@ -56,7 +56,7 @@ router.get('/', authorize({ permission: 'canViewAuditLogs' }), async (req, res, 
         userAgent: row.user_agent,
         createdAt: row.created_at,
       }))
-      
+
       return res.json({ logs, total: logs.length })
     }
 
@@ -78,7 +78,32 @@ router.get('/', authorize({ permission: 'canViewAuditLogs' }), async (req, res, 
       logs = logs.filter(l => l.createdAt <= String(endDate))
     }
 
-    res.json({ logs: logs.slice(0, limitVal), total: logs.length })
+    // enrich file DB logs with user full name when possible and persist backfill
+    const dbUsers = db.users ?? []
+    const enriched = logs.slice(0, limitVal).map(l => {
+      if (l.userFullName) return l
+      const u = dbUsers.find(x => x.id === l.userId || x.username === l.username)
+      return { ...l, userFullName: u ? (u.name || u.full_name) : undefined }
+    })
+
+    // backfill persistent DB entries for any logs that gained a full name
+    let didBackfill = false
+    for (const e of enriched) {
+      const orig = db.auditLogs.find(a => a.id === e.id)
+      if (orig && !orig.userFullName && e.userFullName) {
+        orig.userFullName = e.userFullName
+        didBackfill = true
+      }
+    }
+    if (didBackfill) {
+      try {
+        await saveDb(db)
+      } catch (err) {
+        console.warn('Failed to persist audit log backfill:', err)
+      }
+    }
+
+    res.json({ logs: enriched, total: logs.length })
   } catch (err) {
     next(err)
   }
@@ -88,7 +113,7 @@ router.get('/', authorize({ permission: 'canViewAuditLogs' }), async (req, res, 
 router.get('/:id', authorize({ permission: 'canViewAuditLogs' }), async (req, res, next) => {
   try {
     if (usePg) {
-      const result = await pool.query('SELECT * FROM audit_logs WHERE id = $1 LIMIT 1', [req.params.id])
+      const result = await pool.query('SELECT al.*, COALESCE(al.user_full_name, u.full_name) AS user_full_name FROM audit_logs al LEFT JOIN users u ON al.user_id = u.id WHERE al.id = $1 LIMIT 1', [req.params.id])
       if (!result.rows.length) return res.status(404).json({ error: 'Audit log not found' })
       
       const row = result.rows[0]
@@ -111,6 +136,10 @@ router.get('/:id', authorize({ permission: 'canViewAuditLogs' }), async (req, re
     const db = await loadDb()
     const log = db.auditLogs.find(l => l.id === req.params.id)
     if (!log) return res.status(404).json({ error: 'Audit log not found' })
+    if (!log.userFullName) {
+      const u = (db.users || []).find(x => x.id === log.userId || x.username === log.username)
+      if (u) log.userFullName = u.name || u.full_name
+    }
     res.json({ log })
   } catch (err) {
     next(err)
@@ -144,12 +173,12 @@ router.get('/export/csv', authorize({ permission: 'canViewAuditLogs' }), async (
       }
 
       const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : ''
-      const result = await pool.query(`SELECT * FROM audit_logs ${whereClause} ORDER BY created_at DESC LIMIT 1000`, params)
+      const result = await pool.query(`SELECT al.*, COALESCE(al.user_full_name, u.full_name) AS user_full_name FROM audit_logs al LEFT JOIN users u ON al.user_id = u.id ${whereClause} ORDER BY created_at DESC LIMIT 1000`, params)
 
       const csv = [
-        'ID,Action,User ID,Username,Details,IP Address,Timestamp',
+        'ID,Action,User ID,Username,User Full Name,Details,IP Address,Timestamp',
         ...result.rows.map(l => 
-          `${l.id},"${l.action}","${l.user_id || ''}","${l.username || ''}","${(l.details || '').replace(/"/g, '""')}","${l.ip_address || ''}","${l.created_at}"`
+          `${l.id},"${l.action}","${l.user_id || ''}","${l.username || ''}","${l.user_full_name || ''}","${(l.details || '').replace(/"/g, '""')}","${l.ip_address || ''}","${l.created_at}"`
         )
       ].join('\n')
 
@@ -175,10 +204,18 @@ router.get('/export/csv', authorize({ permission: 'canViewAuditLogs' }), async (
       logs = logs.filter(l => l.createdAt <= String(endDate))
     }
 
+    // enrich logs with user full name
+    const dbUsers = db.users ?? []
+    const enrichedLogs = logs.slice(0, 1000).map(l => {
+      if (l.userFullName) return l
+      const u = dbUsers.find(x => x.id === l.userId || x.username === l.username)
+      return { ...l, userFullName: u ? (u.name || u.full_name) : '' }
+    })
+
     const csv = [
-      'ID,Action,User ID,Username,Details,IP Address,Timestamp',
-      ...logs.slice(0, 1000).map(l => 
-        `${l.id},"${l.action}","${l.userId || ''}","${l.username || ''}","${(l.details || '').replace(/"/g, '""')}","${l.ip_address || ''}","${l.createdAt}"`
+      'ID,Action,User ID,Username,User Full Name,Details,IP Address,Timestamp',
+      ...enrichedLogs.map(l => 
+        `${l.id},"${l.action}","${l.userId || ''}","${l.username || ''}","${(l.userFullName || '').replace(/"/g, '""')}","${(l.details || '').replace(/"/g, '""')}","${l.ip_address || ''}","${l.createdAt}"`
       )
     ].join('\n')
 

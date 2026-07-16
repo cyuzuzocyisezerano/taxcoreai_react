@@ -20,12 +20,17 @@ export function AuditLogs() {
   const [error, setError] = useState<string | null>(null)
   const [actionFilter, setActionFilter] = useState('')
   const [userIdFilter, setUserIdFilter] = useState('')
+  const [highlightId, setHighlightId] = useState<string | null>(null)
 
   useEffect(() => {
     loadLogs()
+    // listen for external refresh events (e.g., after creating a user)
+    const onRefresh = (e: any) => loadLogs(e?.detail?.action)
+    window.addEventListener('audit:refresh', onRefresh)
+    return () => window.removeEventListener('audit:refresh', onRefresh)
   }, [])
 
-  async function loadLogs() {
+  async function loadLogs(highlightAction?: string) {
     try {
       setLoading(true)
       setError(null)
@@ -34,6 +39,20 @@ export function AuditLogs() {
       if (userIdFilter) params.userId = userIdFilter
       const data = await api.getAuditLogs(100)
       setLogs(data.logs)
+
+      if (highlightAction) {
+        const match = (data.logs || []).find((l: any) => l.action === highlightAction)
+        if (match) {
+          setHighlightId(match.id)
+          // scroll into view after DOM updates
+          setTimeout(() => {
+            const el = document.getElementById(`audit-${match.id}`)
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          }, 120)
+          // clear highlight after 6s
+          setTimeout(() => setHighlightId(null), 6000)
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load audit logs')
     } finally {
@@ -79,7 +98,7 @@ export function AuditLogs() {
               onChange={(e) => setUserIdFilter(e.target.value)}
               className="admin-dashboard__filter-input"
             />
-            <button className="btn btn-primary" onClick={loadLogs}>Apply Filters</button>
+            <button className="btn btn-primary" onClick={() => loadLogs()}>Apply Filters</button>
             <button className="btn btn-secondary" onClick={handleExport}>Export CSV</button>
           </div>
 
@@ -99,7 +118,7 @@ export function AuditLogs() {
                   </tr>
                 </thead>
                 <tbody>
-                  {logs.length === 0 ? (
+                    {logs.length === 0 ? (
                     <tr>
                       <td colSpan={5} style={{ textAlign: 'center', padding: '2rem' }}>
                         No audit logs found
@@ -107,7 +126,7 @@ export function AuditLogs() {
                     </tr>
                   ) : (
                     logs.map((log) => (
-                      <tr key={log.id}>
+                      <tr key={log.id} id={`audit-${log.id}`} className={log.id === highlightId ? 'audit-highlight' : ''}>
                         <td>{new Date(log.createdAt).toLocaleString()}</td>
                         <td>{log.username}</td>
                         <td>{log.userFullName || '—'}</td>
