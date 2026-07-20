@@ -9,6 +9,7 @@ import { authenticate } from '../middleware/auth.js'
 import { authorize } from '../middleware/authorize.js'
 import { analysisQueue, canUseQueue, runAnalysisSynchronously } from '../services/jobQueue.js'
 import { logAudit } from '../services/audit.service.js'
+import { createNotification } from './notifications.routes.js'
 
 const router = Router()
 

@@ -28,8 +28,10 @@ export default function UploadDocumentPage() {
     }
   }, [])
 
-  async function handleUpload() {
+  async function handleUpload(e?: React.MouseEvent<HTMLButtonElement>) {
+    e?.preventDefault()
     if (!file) return setError('Please select a file')
+
     const form = new FormData()
     form.append('file', file)
     form.append('title', title || file.name)
@@ -41,10 +43,15 @@ export default function UploadDocumentPage() {
       setError(null)
       setProgress(0)
       const res = await api.uploadDocumentWithProgress(form, (pct) => setProgress(pct))
-      // redirect to document detail or show success
-      window.location.href = `/documents/${res.document.id}`
+      setProgress(100)
+      if (res?.document?.id) {
+        window.location.assign(`/documents/${res.document.id}`)
+      } else {
+        setError('Upload completed but the document ID was not returned.')
+      }
     } catch (e: any) {
-      setError(e?.message || 'Upload failed')
+      const message = e?.message || 'Upload failed'
+      setError(message)
       setProgress(null)
     }
   }
@@ -106,7 +113,7 @@ export default function UploadDocumentPage() {
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
               <button className="btn btn-secondary" onClick={() => window.history.back()}>Cancel</button>
-              <button className="btn btn-primary" onClick={handleUpload}>Upload</button>
+              <button type="button" className="btn btn-primary" onClick={() => void handleUpload()}>Upload</button>
             </div>
           </div>
         </section>

@@ -65,7 +65,7 @@ export function AdminSidebar({ role, title }: AdminSidebarProps) {
   return (
     <aside className="admin-dashboard__sidebar" aria-label="Main navigation">
       <div className="admin-dashboard__brand">
-        <div className="admin-dashboard__logo"><img src="/RRA LOGO.png" alt="RRA Logo" /></div>
+        <div className="admin-dashboard__logo"><img src="/RRA%20LOGO.png" alt="RRA Logo" /></div>
         <div>
           <strong>TaxCoreAI</strong>
           <p>Rwanda Revenue Authority</p>

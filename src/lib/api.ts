@@ -812,7 +812,7 @@ export const api = {
     const token = getToken()
     const headers: Record<string, string> = {}
     if (token) headers['Authorization'] = `Bearer ${token}`
-    return fetch(`${API_BASE}/documents`, {
+    return fetch(buildUrl('/documents'), {
       method: 'POST',
       headers,
       body: form,
@@ -824,27 +824,18 @@ export const api = {
   },
   uploadDocumentWithProgress(form: FormData, onProgress: (percent: number) => void) {
     const token = getToken()
-    return new Promise<{ document: DocumentItem }>((resolve, reject) => {
-      const xhr = new XMLHttpRequest()
-      xhr.open('POST', `${API_BASE}/documents`)
-      if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`)
-      xhr.upload.onprogress = (ev) => {
-        if (ev.lengthComputable) {
-          const pct = Math.round((ev.loaded / ev.total) * 100)
-          onProgress(pct)
-        }
-      }
-      xhr.onload = () => {
-        try {
-          const res = JSON.parse(xhr.responseText || '{}')
-          if (xhr.status >= 200 && xhr.status < 300) resolve(res)
-          else reject(new ApiError(res.error || 'Upload failed', xhr.status))
-        } catch (err) {
-          reject(new ApiError('Upload failed', xhr.status))
-        }
-      }
-      xhr.onerror = () => reject(new ApiError('Network error', 0))
-      xhr.send(form)
+    const headers: Record<string, string> = {}
+    if (token) headers['Authorization'] = `Bearer ${token}`
+
+    return fetch(buildUrl('/documents'), {
+      method: 'POST',
+      headers,
+      body: form,
+    }).then(async (r) => {
+      onProgress(100)
+      const data = await r.json().catch(() => ({}))
+      if (!r.ok) throw new ApiError(data.error || 'Upload failed', r.status)
+      return data as { document: DocumentItem }
     })
   },
 

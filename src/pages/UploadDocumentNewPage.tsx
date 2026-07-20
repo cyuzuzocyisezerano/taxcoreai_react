@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { AdminSidebar } from '../components/AdminSidebar'
 import { useAuth } from '../context/AuthContext'
 import { api, type Taxpayer } from '../lib/api'
@@ -6,6 +7,7 @@ import './AdminDashboard.css'
 
 export default function UploadDocumentNewPage() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [file, setFile] = useState<File | null>(null)
   const [taxpayer, setTaxpayer] = useState<string>('')
   const [title, setTitle] = useState('')
@@ -34,10 +36,10 @@ export default function UploadDocumentNewPage() {
     }
   }, [])
 
-  async function handleUpload(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleUpload(e?: React.FormEvent | React.MouseEvent) {
+    e?.preventDefault()
     if (!file) return setError('Please select a file')
-    
+
     const form = new FormData()
     form.append('file', file)
     form.append('title', title || file.name)
@@ -49,10 +51,16 @@ export default function UploadDocumentNewPage() {
       setError(null)
       setProgress(0)
       const res = await api.uploadDocumentWithProgress(form, (pct) => setProgress(pct))
-      // Redirect to document detail or show success
-      window.location.href = `/documents/${res.document.id}`
+      setProgress(100)
+      setError(null)
+      if (res?.document?.id) {
+        navigate(`/documents/${res.document.id}`, { replace: true })
+      } else {
+        setError('Upload completed but the document ID was not returned.')
+      }
     } catch (e: any) {
-      setError(e?.message || 'Upload failed')
+      const message = e?.message || 'Upload failed'
+      setError(message)
       setProgress(null)
     }
   }
@@ -94,7 +102,7 @@ export default function UploadDocumentNewPage() {
         </header>
 
         <section className="admin-dashboard__content-card">
-          <form onSubmit={handleUpload} style={{ display: 'grid', gap: 16 }}>
+          <form onSubmit={(e) => void handleUpload(e)} style={{ display: 'grid', gap: 16 }}>
             {/* Taxpayer Selection */}
             <div className="card">
               <h3>Taxpayer</h3>
@@ -194,7 +202,7 @@ export default function UploadDocumentNewPage() {
               <button type="button" className="btn btn-secondary" onClick={() => window.history.back()}>
                 Cancel
               </button>
-              <button type="submit" className="btn btn-primary" disabled={!file || progress !== null}>
+              <button type="button" className="btn btn-primary" disabled={!file || progress !== null} onClick={() => void handleUpload()}>
                 {progress !== null ? 'Uploading...' : 'Upload Document'}
               </button>
             </div>

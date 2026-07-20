@@ -8,7 +8,7 @@ interface NotificationCenterProps {
 }
 
 export function NotificationCenter({ onNavigate }: NotificationCenterProps) {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const [unreadCount, setUnreadCount] = useState(0)
   const [recentNotifications, setRecentNotifications] = useState<NotificationItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -35,43 +35,29 @@ export function NotificationCenter({ onNavigate }: NotificationCenterProps) {
   }, [])
 
   useEffect(() => {
+    if (authLoading) return
+
+    if (!user) {
+      setUnreadCount(0)
+      setRecentNotifications([])
+      setLoading(false)
+      return
+    }
+
     loadUnreadCount()
     loadRecentNotifications()
 
-    // SSE real-time updates
-    let eventSource: EventSource | null = null
-    try {
-      eventSource = new EventSource('/api/notifications/stream')
-      eventSource.addEventListener('notification', (ev: MessageEvent) => {
-        try {
-          const payload = JSON.parse(ev.data)
-          // For small payloads, just refetch unread + recent (keeps UI consistent)
-          // but only when unread/in-app notification arrives.
-          if (payload?.type) {
-            loadUnreadCount()
-            loadRecentNotifications()
-          }
-        } catch {
-          // ignore
-        }
-      })
-    } catch {
-      // ignore and fall back to polling
-    }
-
-    // Poll fallback (in case SSE fails) every 60 seconds
+    // Polling fallback keeps the UI responsive without opening the optional stream endpoint.
     const interval = setInterval(() => {
       loadUnreadCount()
       loadRecentNotifications()
     }, 60000)
 
-
     return () => {
       clearInterval(interval)
-      eventSource?.close?.()
     }
 
-  }, [loadUnreadCount, loadRecentNotifications])
+  }, [authLoading, user, loadUnreadCount, loadRecentNotifications])
 
   const handleMarkAsRead = async (id: string) => {
     try {

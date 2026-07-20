@@ -1,5 +1,6 @@
 import { analyzeDocument } from './documentAnalysis.js'
 import { loadDb, saveDb } from '../data/store.js'
+import { createNotification } from '../routes/notifications.routes.js'
 
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379'
 
@@ -77,6 +78,24 @@ function createQueue() {
           doc.status = 'Analyzed'
           await saveDb(db)
           console.log(`Document ${result.documentId} updated with analysis results`)
+
+          const supervisor = (db.users || []).find((user) => user.role === 'Supervisor')
+          if (supervisor) {
+            await createNotification({
+              type: 'document_analysis_complete',
+              title: 'Document ready for archive approval',
+              message: `${doc.title || 'A document'} has finished analysis and is ready for supervisor approval before archival.`,
+              userId: supervisor.id,
+              category: 'document',
+              priority: 'high',
+              metadata: {
+                documentId: doc.id,
+                documentTitle: doc.title,
+                taxpayerTin: doc.taxpayerTin || null,
+              },
+              actionUrl: `/documents/${doc.id}`,
+            })
+          }
         }
       } catch (err) {
         console.error(`Failed to update document ${result.documentId}:`, err)

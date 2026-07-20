@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api, type NotificationItem } from '../lib/api'
+import { useAuth } from '../context/AuthContext'
 import './AlertPopup.css'
 
 interface AlertPopupProps {
@@ -7,51 +8,34 @@ interface AlertPopupProps {
 }
 
 export function AlertPopup({ onNavigate }: AlertPopupProps) {
+  const { user, loading: authLoading } = useAuth()
   const [alerts, setAlerts] = useState<NotificationItem[]>([])
   const [currentAlertIndex, setCurrentAlertIndex] = useState(0)
   const [isVisible, setIsVisible] = useState(false)
-  const [isPaused, setIsPaused] = useState(false)
+  const [isPaused] = useState(false)
 
   useEffect(() => {
-    loadAlerts()
-    
-    // SSE real-time updates
-    let eventSource: EventSource | null = null
-    try {
-      eventSource = new EventSource('/api/notifications/stream')
-      eventSource.addEventListener('notification', (ev: MessageEvent) => {
-        if (isPaused) return
-        try {
-          const payload = JSON.parse(ev.data)
-          const priority = payload?.priority
-          const type = payload?.type
-          const shouldAlert = payload && !payload.read && (priority === 'critical' || priority === 'high')
-          // If it's a critical/high notification, refresh alerts.
-          if (shouldAlert && type) {
-            loadAlerts()
-          }
-        } catch {
-          // ignore
-        }
-      })
-    } catch {
-      // ignore and fall back to polling
+    if (authLoading) return
+
+    if (!user) {
+      setAlerts([])
+      return
     }
 
-    // Poll fallback (if SSE fails) every 30 seconds
+    loadAlerts()
+
+    // Polling fallback avoids the optional stream request that was producing the 404 noise.
     const interval = setInterval(() => {
       if (!isPaused) {
         loadAlerts()
       }
     }, 30000)
 
-
     return () => {
       clearInterval(interval)
-      eventSource?.close?.()
     }
 
-  }, [isPaused])
+  }, [authLoading, user, isPaused])
 
   const loadAlerts = async () => {
     try {
