@@ -75,7 +75,7 @@ function createQueue() {
         if (doc) {
           doc.analysis = result.analysis
           doc.analysisStatus = 'completed'
-          doc.status = 'Analyzed'
+          doc.status = 'Pending Approval'
           await saveDb(db)
           console.log(`Document ${result.documentId} updated with analysis results`)
 
@@ -84,7 +84,7 @@ function createQueue() {
             await createNotification({
               type: 'document_analysis_complete',
               title: 'Document ready for archive approval',
-              message: `${doc.title || 'A document'} has finished analysis and is ready for supervisor approval before archival.`,
+              message: `${doc.title || 'A document'} has finished analysis and is ready for supervisor approval before it is archived.`,
               userId: supervisor.id,
               category: 'document',
               priority: 'high',
@@ -94,6 +94,7 @@ function createQueue() {
                 taxpayerTin: doc.taxpayerTin || null,
               },
               actionUrl: `/documents/${doc.id}`,
+              eventBus: globalThis.__taxcoreNotificationBus || null,
             })
           }
         }
@@ -128,8 +129,27 @@ export async function runAnalysisSynchronously({ documentId, filePath, fileName 
   if (doc) {
     doc.analysis = analysis
     doc.analysisStatus = 'completed'
-    doc.status = 'Analyzed'
+    doc.status = 'Pending Approval'
     await saveDb(db)
+
+    const supervisor = (db.users || []).find((user) => user.role === 'Supervisor')
+    if (supervisor) {
+      await createNotification({
+        type: 'document_analysis_complete',
+        title: 'Document ready for archive approval',
+        message: `${doc.title || 'A document'} has finished analysis and is ready for supervisor approval before it is archived.`,
+        userId: supervisor.id,
+        category: 'document',
+        priority: 'high',
+        metadata: {
+          documentId: doc.id,
+          documentTitle: doc.title,
+          taxpayerTin: doc.taxpayerTin || null,
+        },
+        actionUrl: `/documents/${doc.id}`,
+        eventBus: globalThis.__taxcoreNotificationBus || null,
+      })
+    }
   }
   return { documentId, fileName, analysis, completedAt: new Date().toISOString() }
 }

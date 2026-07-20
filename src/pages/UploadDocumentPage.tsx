@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react'
+import { Navigate } from 'react-router-dom'
 import { AdminSidebar } from '../components/AdminSidebar'
+import { useAuth } from '../context/AuthContext'
 import { api, type DocumentItem, type Taxpayer } from '../lib/api'
+import { hasPermission } from '../lib/permissions'
 import './AdminDashboard.css'
 
 export default function UploadDocumentPage() {
+  const { user } = useAuth()
   const [file, setFile] = useState<File | null>(null)
   const [taxpayer, setTaxpayer] = useState<string | null>(null)
   const [title, setTitle] = useState('')
@@ -13,6 +17,11 @@ export default function UploadDocumentPage() {
   const [taxpayers, setTaxpayers] = useState<Taxpayer[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const role = (user?.role ?? 'Admin') as 'Admin' | 'Officer' | 'Auditor' | 'Supervisor'
+  if (!hasPermission(role, 'canAddDocuments')) {
+    return <Navigate to="/documents" replace />
+  }
 
   useEffect(() => {
     let mounted = true

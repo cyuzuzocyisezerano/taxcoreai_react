@@ -190,6 +190,7 @@ export async function createNotification({
   metadata = {},
   actionUrl = null,
   expiresAt = null,
+  eventBus = null,
 }) {
   const db = await loadDb()
   const notification = {
@@ -223,9 +224,9 @@ export async function createNotification({
     await addNotificationHistory(db, notification.id, userId, 'sent', channel)
   }
 
-  // Push to SSE clients
-  if (req.app?.locals?.eventBus) {
-    req.app.locals.eventBus.emit('notification', notification)
+  // Push to SSE clients when an event bus is available
+  if (eventBus) {
+    eventBus.emit('notification', notification)
   }
 
   return notification

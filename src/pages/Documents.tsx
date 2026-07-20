@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { AdminSidebar } from '../components/AdminSidebar'
 import { useAuth } from '../context/AuthContext'
 import { api, type DocumentItem, type Taxpayer } from '../lib/api'
+import { hasPermission } from '../lib/permissions'
 import './AdminDashboard.css'
 
 export function Documents() {
@@ -18,6 +19,7 @@ export function Documents() {
 
   const role = user?.role ?? 'Admin'
   const title = user?.title ?? 'System Administrator'
+  const canUploadDocuments = hasPermission((role as any) ?? 'Admin', 'canAddDocuments')
 
   const loadDocuments = useCallback(async () => {
     setLoading(true)
@@ -96,12 +98,16 @@ export function Documents() {
             <button className="btn btn-secondary" type="button" onClick={() => handleExport('csv')}>
               Export CSV
             </button>
-            <button className="btn btn-secondary" type="button" onClick={() => window.location.href = '/bulk-upload'}>
-              Bulk Upload
-            </button>
-            <button className="btn btn-primary" type="button" onClick={() => window.location.href = '/upload-document-new'}>
-              Upload Document
-            </button>
+            {canUploadDocuments && (
+              <>
+                <button className="btn btn-secondary" type="button" onClick={() => window.location.href = '/bulk-upload'}>
+                  Bulk Upload
+                </button>
+                <button className="btn btn-primary" type="button" onClick={() => window.location.href = '/upload-document-new'}>
+                  Upload Document
+                </button>
+              </>
+            )}
           </div>
         </header>
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { hasPermission } from '../lib/permissions'
 import { AdminSidebar } from '../components/AdminSidebar'
 import { useAuth } from '../context/AuthContext'
 import { api, type DashboardStats, type Taxpayer } from '../lib/api'
@@ -368,7 +369,9 @@ export function AdminDashboard() {
               </div>
               <div className="quick-actions">
                 <Link to="/taxpayers" className="btn btn-secondary btn-block">Register Taxpayer</Link>
-                <Link to="/upload-document" className="btn btn-secondary btn-block">Upload Document</Link>
+                {hasPermission((user?.role as any) ?? 'Admin', 'canAddDocuments') && (
+                  <Link to="/upload-document" className="btn btn-secondary btn-block">Upload Document</Link>
+                )}
                 <Link to="/search-retrieval" className="btn btn-secondary btn-block">Search Records</Link>
                 <Link to="/reports" className="btn btn-secondary btn-block">Generate Report</Link>
               </div>

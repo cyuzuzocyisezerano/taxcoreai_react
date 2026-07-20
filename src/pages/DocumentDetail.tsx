@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { AdminSidebar } from '../components/AdminSidebar'
+import { useAuth } from '../context/AuthContext'
 import { api, type DocumentItem, type DocumentAnalysis } from '../lib/api'
+import { hasPermission } from '../lib/permissions'
 import './AdminDashboard.css'
 
 export function DocumentDetail() {
@@ -13,6 +15,8 @@ export function DocumentDetail() {
   const [jobState, setJobState] = useState<string | null>(null)
   const [jobProgress, setJobProgress] = useState<number>(0)
   const [analyzing, setAnalyzing] = useState(false)
+  const [approvingArchive, setApprovingArchive] = useState(false)
+  const { user } = useAuth()
 
   let pollInterval: number | null = null
 
@@ -88,6 +92,20 @@ export function DocumentDetail() {
     }
   }
 
+  async function handleApproveArchive() {
+    if (!id) return
+    try {
+      setApprovingArchive(true)
+      setError(null)
+      const res = await api.approveDocumentArchive(id)
+      setDocument(res.document)
+    } catch (e: any) {
+      setError(e?.message || 'Failed to approve document for archival')
+    } finally {
+      setApprovingArchive(false)
+    }
+  }
+
   useEffect(() => {
     let mounted = true
 
@@ -116,6 +134,8 @@ export function DocumentDetail() {
       if (pollInterval) window.clearInterval(pollInterval)
     }
   }, [id])
+
+  const canApproveArchive = Boolean(user?.role && hasPermission(user.role as 'Admin' | 'Officer' | 'Auditor' | 'Supervisor', 'canApproveDocuments')) && String(document?.status || '').toLowerCase() !== 'archived'
 
   const renderAnalysis = (analysis: DocumentAnalysis) => {
     const getRiskColor = (level: string) => {
@@ -401,6 +421,14 @@ export function DocumentDetail() {
                   Download
                 </a>
               </div>
+
+              {canApproveArchive && (
+                <div style={{ marginTop: 12 }}>
+                  <button className="btn btn-secondary" onClick={handleApproveArchive} disabled={approvingArchive}>
+                    {approvingArchive ? 'Approving...' : 'Approve for Archiving'}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </section>

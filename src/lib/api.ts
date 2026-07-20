@@ -839,6 +839,12 @@ export const api = {
     })
   },
 
+  approveDocumentArchive(documentId: string) {
+    return request<{ document: DocumentItem }>(`/documents/${encodeURIComponent(documentId)}/approve-archive`, {
+      method: 'POST',
+    })
+  },
+
   getJobStatus(jobId: string) {
     return request<{
       jobId: string

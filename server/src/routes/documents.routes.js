@@ -27,6 +27,48 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage })
 
+function getFilesRoot() {
+  return path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'files')
+}
+
+async function moveDocumentToInternalArchive(documentFileName, filesDir) {
+  if (!documentFileName) {
+    return null
+  }
+
+  const archiveDir = path.join(filesDir, 'internal-archive')
+  await fs.promises.mkdir(archiveDir, { recursive: true })
+
+  const parsedName = path.basename(documentFileName)
+  const ext = path.extname(parsedName)
+  const baseName = path.basename(parsedName, ext)
+
+  const sourcePath = path.isAbsolute(documentFileName)
+    ? documentFileName
+    : path.join(filesDir, documentFileName)
+
+  let targetName = `${baseName}${ext}`
+  let targetPath = path.join(archiveDir, targetName)
+  let counter = 1
+
+  while (await fs.promises.access(targetPath).then(() => true).catch(() => false)) {
+    targetName = `${baseName}-${counter}${ext}`
+    targetPath = path.join(archiveDir, targetName)
+    counter += 1
+  }
+
+  try {
+    await fs.promises.access(sourcePath)
+    if (sourcePath !== targetPath) {
+      await fs.promises.rename(sourcePath, targetPath)
+    }
+  } catch {
+    // The original file may already be absent; use the target path as the archived location.
+  }
+
+  return path.join('internal-archive', targetName)
+}
+
 // Allow public GET access for documents. If `DATABASE_URL` is set, query Postgres.
 const usePg = Boolean(process.env.DATABASE_URL)
 
@@ -313,7 +355,7 @@ router.post('/:id/analyze', authenticate, authorize({ permission: 'canAddDocumen
       return res.status(400).json({ error: 'No file available for analysis' })
     }
 
-    const filesDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'files')
+    const filesDir = getFilesRoot()
     const filePath = path.join(filesDir, doc.fileName)
 
     if (!fs.existsSync(filePath)) {
@@ -371,6 +413,68 @@ router.post('/:id/analyze', authenticate, authorize({ permission: 'canAddDocumen
   } catch (err) {
     console.error('[documents] analyze.route crashed', err?.message || err)
     return res.status(500).json({ error: 'Analysis failed', details: err?.message || 'Unknown error' })
+  }
+})
+
+// Approve a document for archival
+router.post('/:id/approve-archive', authenticate, authorize({ permission: 'canApproveDocuments' }), async (req, res, next) => {
+  try {
+    const { id } = req.params
+    const filesDir = getFilesRoot()
+
+    if (usePg) {
+      try {
+        const result = await pool.query('SELECT * FROM documents WHERE id = $1 LIMIT 1', [id])
+        if (result.rows.length) {
+          const current = result.rows[0]
+          const archivedFileName = await moveDocumentToInternalArchive(current.file_name || current.file_path || '', filesDir)
+          const archivedPath = archivedFileName ? path.join(filesDir, archivedFileName) : path.join(filesDir, current.file_name || current.file_path || '')
+
+          const updated = await pool.query(
+            `UPDATE documents
+             SET status = $1, file_name = $2, file_path = $3, updated_at = CURRENT_TIMESTAMP
+             WHERE id = $4
+             RETURNING *`,
+            ['Archived', archivedFileName || current.file_name, archivedPath, id]
+          )
+
+          await logAudit({
+            action: 'DOCUMENT_ARCHIVE_APPROVE',
+            userId: req.user?.sub,
+            username: req.user?.username,
+            details: `Approved document ${id} for archival`,
+          })
+
+          return res.json({ document: updated.rows[0] })
+        }
+      } catch (err) {
+        console.warn('Postgres unavailable for archive approval, using JSON fallback:', err.message)
+      }
+    }
+
+    const db = await loadDb()
+    const doc = db.documents.find((d) => d.id === id)
+    if (!doc) return res.status(404).json({ error: 'Document not found' })
+
+    const archivedFileName = await moveDocumentToInternalArchive(doc.fileName || '', filesDir)
+    doc.fileName = archivedFileName || doc.fileName
+    doc.filePath = archivedFileName ? path.join(filesDir, archivedFileName) : doc.filePath
+    doc.status = 'Archived'
+    doc.archiveApprovedBy = req.user?.username || req.user?.sub
+    doc.archiveApprovedAt = new Date().toISOString()
+    doc.archiveLocation = 'internal-archive'
+    await saveDb(db)
+
+    await logAudit({
+      action: 'DOCUMENT_ARCHIVE_APPROVE',
+      userId: req.user?.sub,
+      username: req.user?.username,
+      details: `Approved document ${id} for archival`,
+    })
+
+    res.json({ document: doc })
+  } catch (err) {
+    next(err)
   }
 })
 
